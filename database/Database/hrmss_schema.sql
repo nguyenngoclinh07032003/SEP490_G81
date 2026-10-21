@@ -1,8 +1,9 @@
--- HRMSS 25-table physical schema. Target: MySQL 8.0.16+ / 8.4.
+-- HRMSS 28-table physical schema. Target: MySQL 8.0.16+ / 8.4.
 
 -- attachment: exactly one direct owner FK; no attachment junction tables.
 
--- Run against an empty hrmss schema (all old tables removed). No DROP statements.
+-- Baseline for a NEW empty hrmss database only. Not an ALTER migration for a populated database.
+-- No DROP statements. Back up existing data before applying a separately reviewed migration.
 
 -- Status dictionaries, retention, invoice count and due-date policy remain to be finalized.
 
@@ -12,7 +13,10 @@
 
 -- One INITIAL quotation per request; multiple SUPPLEMENTAL quotations are allowed.
 
--- Assignment history may repeat a visit/technician pair; do not make that pair globally UNIQUE.
+-- Assignment history may repeat a visit/technician pair; active-pair uniqueness uses a nullable generated helper.
+-- New workforce statuses use AVAILABLE / UNAVAILABLE / CANCELLED for a whole shift.
+-- Only the latest extension proposal and latest technician position are retained; schedule changes retain history.
+-- Store business timestamps consistently in UTC. Per-technician cleanup/travel buffer: 30 minutes.
 
 -- Handover items reserve each payment for one batch. Rejected draft items must be released before resubmission.
 
@@ -41,11 +45,28 @@ CREATE TABLE user_account (
   phone VARCHAR(30) NULL,
   ava_storage_reference VARCHAR(255) NULL,
   account_status VARCHAR(30) NOT NULL,
+  location_sharing_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  latitude DECIMAL(10,7) NULL,
+  longitude DECIMAL(10,7) NULL,
+  location_accuracy DECIMAL(10,2) NULL,
+  location_recorded_at DATETIME(6) NULL,
+  location_received_at DATETIME(6) NULL,
+  location_session_expires_at DATETIME(6) NULL,
+  location_state_version BIGINT UNSIGNED NOT NULL DEFAULT 0,
   created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (user_id),
   UNIQUE (username),
-  UNIQUE KEY uq_user_account_email (email)
+  UNIQUE KEY uq_user_account_email (email),
+  CONSTRAINT chk_user_location_enabled CHECK (location_sharing_enabled IN (0, 1)),
+  CONSTRAINT chk_user_location_coordinates CHECK (
+    (latitude IS NULL AND longitude IS NULL) OR
+    (latitude IS NOT NULL AND longitude IS NOT NULL AND latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180)
+  ),
+  CONSTRAINT chk_user_location_accuracy CHECK (location_accuracy IS NULL OR location_accuracy >= 0),
+  CONSTRAINT chk_user_location_timestamps CHECK (
+    latitude IS NULL OR (location_recorded_at IS NOT NULL AND location_received_at IS NOT NULL)
+  )
 ) ENGINE=InnoDB;
 
 CREATE TABLE customer (
@@ -170,12 +191,38 @@ CREATE TABLE repair_visit (
   remaining_work TEXT NULL,
   testing_result TEXT NULL,
   handover_result TEXT NULL,
+  technical_completed_at DATETIME(6) NULL,
+  extension_requested_by BIGINT UNSIGNED NULL,
+  extension_requested_at DATETIME(6) NULL,
+  proposed_end DATETIME(6) NULL,
+  extension_reason TEXT NULL,
+  extension_status VARCHAR(20) NULL,
+  extension_decided_by BIGINT UNSIGNED NULL,
+  extension_decided_at DATETIME(6) NULL,
+  extension_decision_notes TEXT NULL,
   created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (visit_id),
   UNIQUE (request_id, visit_number),
   CHECK (visit_number > 0),
-  CHECK (scheduled_end IS NULL OR scheduled_start IS NULL OR scheduled_end > scheduled_start)
+  CHECK (scheduled_end IS NULL OR scheduled_start IS NULL OR scheduled_end > scheduled_start),
+  CONSTRAINT chk_visit_extension_state CHECK (
+    (extension_status IS NULL AND extension_requested_by IS NULL AND extension_requested_at IS NULL
+      AND proposed_end IS NULL AND extension_reason IS NULL AND extension_decided_by IS NULL
+      AND extension_decided_at IS NULL AND extension_decision_notes IS NULL) OR
+    (extension_status IS NOT NULL AND extension_status IN ('PENDING', 'APPROVED', 'REJECTED')
+      AND extension_requested_by IS NOT NULL AND extension_requested_at IS NOT NULL
+      AND extension_reason IS NOT NULL AND CHAR_LENGTH(TRIM(extension_reason)) > 0
+      AND ((extension_status = 'PENDING' AND extension_decided_by IS NULL AND extension_decided_at IS NULL)
+        OR (extension_status IN ('APPROVED', 'REJECTED') AND extension_decided_by IS NOT NULL
+          AND extension_decided_at IS NOT NULL AND extension_decided_at >= extension_requested_at)))
+  ),
+  CONSTRAINT chk_visit_extension_proposed CHECK (
+    proposed_end IS NULL OR (extension_requested_at IS NOT NULL AND proposed_end > extension_requested_at)
+  ),
+  CONSTRAINT chk_visit_extension_approved CHECK (
+    extension_status IS NULL OR extension_status <> 'APPROVED' OR proposed_end IS NOT NULL
+  )
 ) ENGINE=InnoDB;
 
 CREATE TABLE technician_assignment (
@@ -186,11 +233,33 @@ CREATE TABLE technician_assignment (
   assigned_at DATETIME(6) NOT NULL,
   ended_at DATETIME(6) NULL,
   assignment_status VARCHAR(40) NOT NULL,
+  planned_start DATETIME(6) NULL,
+  planned_end DATETIME(6) NULL,
+  started_at DATETIME(6) NULL,
+  completed_at DATETIME(6) NULL,
+  completion_note TEXT NULL,
+  active_technician_id BIGINT UNSIGNED GENERATED ALWAYS AS
+    (CASE WHEN ended_at IS NULL AND completed_at IS NULL THEN technician_id ELSE NULL END) STORED,
   notes TEXT NULL,
   created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (assignment_id),
-  CHECK (ended_at IS NULL OR ended_at >= assigned_at)
+  CHECK (ended_at IS NULL OR ended_at >= assigned_at),
+  UNIQUE KEY uq_assignment_visit_identity (visit_id, assignment_id),
+  UNIQUE KEY uq_assignment_active_pair (visit_id, active_technician_id),
+  KEY idx_assignment_technician_plan (technician_id, planned_start, planned_end),
+  KEY idx_assignment_technician_completed (technician_id, completed_at),
+  CONSTRAINT chk_assignment_plan CHECK (
+    (planned_start IS NULL AND planned_end IS NULL) OR
+    (planned_start IS NOT NULL AND planned_end IS NOT NULL AND planned_end > planned_start)
+  ),
+  CONSTRAINT chk_assignment_started CHECK (started_at IS NULL OR started_at >= assigned_at),
+  CONSTRAINT chk_assignment_completed CHECK (
+    completed_at IS NULL OR (completed_at >= assigned_at AND (started_at IS NULL OR completed_at >= started_at))
+  ),
+  CONSTRAINT chk_assignment_ended_completion CHECK (
+    ended_at IS NULL OR completed_at IS NULL OR ended_at >= completed_at
+  )
 ) ENGINE=InnoDB;
 
 CREATE TABLE diagnosis (
@@ -404,6 +473,65 @@ CREATE TABLE receivable_follow_up (
   PRIMARY KEY (follow_up_id)
 ) ENGINE=InnoDB;
 
+-- Technician specialties reuse ServiceCategory; no separate specialty master table.
+CREATE TABLE technician_specialty (
+  technician_id BIGINT UNSIGNED NOT NULL,
+  category_id BIGINT UNSIGNED NOT NULL,
+  maintained_by BIGINT UNSIGNED NOT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (technician_id, category_id),
+  KEY idx_specialty_category (category_id)
+) ENGINE=InnoDB;
+
+-- UNAVAILABLE applies to the entire shift. BUSY is derived from reservations, not stored here.
+CREATE TABLE technician_shift (
+  shift_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  technician_id BIGINT UNSIGNED NOT NULL,
+  starts_at DATETIME(6) NOT NULL,
+  ends_at DATETIME(6) NOT NULL,
+  shift_status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',
+  status_reason TEXT NULL,
+  created_by BIGINT UNSIGNED NOT NULL,
+  updated_by BIGINT UNSIGNED NOT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (shift_id),
+  KEY idx_shift_technician_time (technician_id, starts_at, ends_at),
+  CONSTRAINT chk_shift_time CHECK (ends_at > starts_at),
+  CONSTRAINT chk_shift_status CHECK (shift_status IN ('AVAILABLE', 'UNAVAILABLE', 'CANCELLED')),
+  CONSTRAINT chk_shift_status_reason CHECK (
+    shift_status = 'AVAILABLE' OR (status_reason IS NOT NULL AND CHAR_LENGTH(TRIM(status_reason)) > 0)
+  )
+) ENGINE=InnoDB;
+
+-- A visit-level change has assignment_id NULL; otherwise the composite FK enforces visit ownership.
+CREATE TABLE schedule_change_history (
+  change_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  visit_id BIGINT UNSIGNED NOT NULL,
+  assignment_id BIGINT UNSIGNED NULL,
+  changed_by BIGINT UNSIGNED NOT NULL,
+  changed_at DATETIME(6) NOT NULL,
+  old_start DATETIME(6) NULL,
+  old_end DATETIME(6) NULL,
+  new_start DATETIME(6) NULL,
+  new_end DATETIME(6) NULL,
+  reason TEXT NOT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (change_id),
+  KEY idx_schedule_history_visit_time (visit_id, changed_at),
+  KEY idx_schedule_history_assignment (visit_id, assignment_id),
+  CONSTRAINT chk_schedule_old_interval CHECK (
+    (old_start IS NULL AND old_end IS NULL) OR (old_start IS NOT NULL AND old_end IS NOT NULL AND old_end > old_start)
+  ),
+  CONSTRAINT chk_schedule_new_interval CHECK (
+    (new_start IS NULL AND new_end IS NULL) OR (new_start IS NOT NULL AND new_end IS NOT NULL AND new_end > new_start)
+  ),
+  CONSTRAINT chk_schedule_has_interval CHECK (old_start IS NOT NULL OR new_start IS NOT NULL),
+  CONSTRAINT chk_schedule_reason CHECK (CHAR_LENGTH(TRIM(reason)) > 0)
+) ENGINE=InnoDB;
+
 ALTER TABLE user_account ADD CONSTRAINT fk_01_user_account FOREIGN KEY (role_id) REFERENCES role (role_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 ALTER TABLE customer ADD CONSTRAINT fk_02_customer FOREIGN KEY (user_id) REFERENCES user_account (user_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
@@ -503,6 +631,30 @@ ALTER TABLE attachment ADD CONSTRAINT fk_48_attachment FOREIGN KEY (invoice_id) 
 -- Self-reference is non-identifying: original_request_id is not part of the PK.
 ALTER TABLE service_request ADD CONSTRAINT fk_49_service_request_original FOREIGN KEY (original_request_id) REFERENCES service_request (request_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
+
+-- Additional foreign keys for the confirmed 28-table workforce model.
+ALTER TABLE repair_visit ADD CONSTRAINT fk_50_repair_visit FOREIGN KEY (extension_requested_by) REFERENCES user_account (user_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE repair_visit ADD CONSTRAINT fk_51_repair_visit FOREIGN KEY (extension_decided_by) REFERENCES user_account (user_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE technician_specialty ADD CONSTRAINT fk_52_technician_specialty FOREIGN KEY (technician_id) REFERENCES user_account (user_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE technician_specialty ADD CONSTRAINT fk_53_technician_specialty FOREIGN KEY (category_id) REFERENCES service_category (category_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE technician_specialty ADD CONSTRAINT fk_54_technician_specialty FOREIGN KEY (maintained_by) REFERENCES user_account (user_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE technician_shift ADD CONSTRAINT fk_55_technician_shift FOREIGN KEY (technician_id) REFERENCES user_account (user_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE technician_shift ADD CONSTRAINT fk_56_technician_shift FOREIGN KEY (created_by) REFERENCES user_account (user_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE technician_shift ADD CONSTRAINT fk_57_technician_shift FOREIGN KEY (updated_by) REFERENCES user_account (user_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE schedule_change_history ADD CONSTRAINT fk_58_schedule_change_history FOREIGN KEY (visit_id) REFERENCES repair_visit (visit_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE schedule_change_history ADD CONSTRAINT fk_59_schedule_change_history FOREIGN KEY (changed_by) REFERENCES user_account (user_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE schedule_change_history ADD CONSTRAINT fk_60_schedule_change_history FOREIGN KEY (visit_id, assignment_id) REFERENCES technician_assignment (visit_id, assignment_id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
 -- Backend must reject self-reference and verify that the original request is STANDARD,
 -- belongs to the same customer, and satisfies the warranty eligibility rules.
 -- Preserve these invariants when editing a request that already has warranty children.
@@ -510,6 +662,33 @@ ALTER TABLE service_request ADD CONSTRAINT fk_49_service_request_original FOREIG
 -- To change the default address: lock the customer row, clear the old default, then set
 -- the new default within one transaction. Deleting it does not choose a replacement.
 -- default_customer_id is a physical helper column, not a new conceptual ERD attribute.
+
+-- Backend workforce rules (not enforced by row-level CHECK constraints):
+-- Admin maintains specialties; Manager manages shifts and all schedule/assignment changes.
+-- Verify TECHNICIAN / ADMIN / MANAGER roles at every write; no dynamic role permissions.
+-- Non-cancelled shifts of one technician must not overlap. UNAVAILABLE affects the entire shift.
+-- New assignments must fit AVAILABLE shifts and team categories must cover required work.
+-- For a future booking, reserve planned_end + 30 minutes; after own completion use completed_at + 30 minutes.
+-- Include the buffer before AND after the proposed booking, not only direct visit overlaps.
+-- Lock stable user_account rows for all affected technicians in ascending ID order, recheck and commit atomically.
+-- completed_at is the first server-accepted own-completion time; repeated requests must not change it.
+-- Completion releases only that technician. It does not complete the entire visit, close the request or confirm payment.
+-- ended_at is administrative assignment end, not proof of successful work completion.
+-- Active-pair helper requires setting ended_at when cancelling/reassigning; retain all historical records.
+-- Real overruns may be recorded immediately; Manager must resolve affected plans before approving an extension.
+-- Keep only the latest extension proposal in repair_visit; replace its full state atomically, not field by field.
+-- Do not overwrite a PENDING proposal with a second request without explicit resolution.
+-- APPROVED requires a known proposed_end and conflict-free schedule updates plus schedule_change_history in one transaction.
+-- Unknown duration remains PENDING; do not fabricate a finish or automatically shift later appointments.
+-- A new trip is a follow-up visit; extra time does not itself increase the amount payable.
+-- UserAccount stores the latest location only, never a default movement history.
+-- Accept only own foreground updates, opted in and within an AVAILABLE current shift; Manager alone can view locations.
+-- Validate location_state_version/session expiry to reject stale sessions and out-of-order updates.
+-- Turning sharing off clears coordinates/timestamps/expiry and increments version atomically.
+-- At shift end or session expiry hide the point; reconnect requires fresh authorization and a fresh position.
+-- Stale timeout and update interval remain integration settings to agree with the app owner.
+-- No technician_unavailability, visit_extension_request or technician_location_state tables are introduced.
+-- Public material pricing and expanded customer statistics/reminders remain deferred.
 
 INSERT INTO role (role_code, role_name) VALUES
 ('CUSTOMER','Customer'),
