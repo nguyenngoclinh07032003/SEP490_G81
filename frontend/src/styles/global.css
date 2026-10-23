@@ -1,0 +1,25 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #172c3c;
+  background: #f3f6f8;
+  font-synthesis: none;
+  line-height: 1.6;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+.app-shell { max-width: 1120px; margin: auto; padding: 0 24px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 0; border-bottom: 1px solid #d9e2e8; }
+header a { color: #174d63; font-size: 1.5rem; font-weight: 800; text-decoration: none; }
+header p, footer { font-size: .875rem; color: #596b78; }
+.intro { padding: 48px 0 32px; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); line-height: 1.2; }
+.module-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+article { background: white; border: 1px solid #d9e2e8; border-radius: 12px; padding: 28px; }
+h2 { font-size: 1.25rem; }
+article p { color: #596b78; }
+article span { background: #edf3f6; color: #476576; font-size: .75rem; border-radius: 6px; padding: 4px 8px; }
+footer { padding: 48px 0 24px; }
+@media (max-width: 600px) {
+  .module-grid { grid-template-columns: 1fr; }
+  header { align-items: flex-start; flex-direction: column; gap: 0; }
+}

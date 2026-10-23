@@ -1,20 +1,12 @@
-import { useEffect, useState } from 'react';
-import { getHealth } from './services/api.js';
+import ApiStatus from './components/ApiStatus.jsx';
+import HomePage from './pages/HomePage.jsx';
 
 export default function App() {
-  const [apiStatus, setApiStatus] = useState('Đang kiểm tra API...');
-
-  useEffect(() => {
-    getHealth()
-      .then(() => setApiStatus('API đang hoạt động'))
-      .catch(() => setApiStatus('Chưa kết nối được API'));
-  }, []);
-
   return (
-    <main>
-      <h1>HRMSS</h1>
-      <p>Hệ thống quản lý khách sạn</p>
-      <p role="status">{apiStatus}</p>
-    </main>
+    <div className="app-shell">
+      <header><a href="/">HRMSS</a><ApiStatus /></header>
+      <HomePage />
+      <footer>HRMSS · Hệ thống quản lý khách sạn</footer>
+    </div>
   );
 }
