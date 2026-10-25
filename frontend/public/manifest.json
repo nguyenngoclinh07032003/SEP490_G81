@@ -1,0 +1,31 @@
+{
+  "name": "HRMSS - Sửa Chữa & Bảo Trì Tại Nhà",
+  "short_name": "HRMSS",
+  "description": "Hệ thống quản lý dịch vụ sửa chữa và bảo trì tại nhà Cơ Điện Lạnh Minh Đức",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#087DEB",
+  "icons": [
+    {
+      "src": "/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

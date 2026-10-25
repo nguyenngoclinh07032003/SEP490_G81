@@ -15,7 +15,7 @@ const ServiceAddressModel = createReadModel({
     'created_at',
     'updated_at',
   ],
-  // Cột do MySQL tự tính.
+  // Cột do DB tự tính (Generated Column).
   generatedColumns: ["default_customer_id"],
   hiddenColumns: [],
 });

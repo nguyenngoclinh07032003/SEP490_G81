@@ -3,4 +3,7 @@ dist/
 .env
 *.log
 .DS_Store
+.claude/
 database/.mysql-local/
+database/Database/*.pgerd
+

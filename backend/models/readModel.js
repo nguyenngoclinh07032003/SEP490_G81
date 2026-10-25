@@ -1,14 +1,14 @@
 import pool from '../config/database.js';
 
-// Tạo model đọc dùng chung; có thể truyền connection của transaction.
+// Tạo model đọc dùng chung cho PostgreSQL; có thể truyền connection của transaction.
 export default function createReadModel({ table, primaryKey, columns, generatedColumns = [], hiddenColumns = [] }) {
-  // Bọc tên bảng/cột bằng backtick.
-  const quote = (name) => `\`${name}\``;
+  // Bọc tên bảng/cột bằng double-quote theo chuẩn PostgreSQL.
+  const quote = (name) => `"${name}"`;
   // Loại cột bị ẩn khỏi kết quả.
   const visibleColumns = columns.filter((column) => !hiddenColumns.includes(column));
   const projection = visibleColumns.map(quote).join(', ');
 
-  // Tạo WHERE với giá trị truyền qua tham số.
+  // Tạo WHERE với giá trị truyền qua tham số ($1, $2, ... cho PostgreSQL).
   function whereClause(filters) {
     if (!filters || typeof filters !== 'object' || Array.isArray(filters)) {
       throw new TypeError('Filters must be an object');
@@ -23,7 +23,7 @@ export default function createReadModel({ table, primaryKey, columns, generatedC
         throw new TypeError(`Invalid filter value: ${column}`);
       }
       values.push(value);
-      return `${quote(column)} = ?`;
+      return `${quote(column)} = $${values.length}`;
     });
     return { sql: clauses.length ? ` WHERE ${clauses.join(' AND ')}` : '', values };
   }
@@ -45,7 +45,7 @@ export default function createReadModel({ table, primaryKey, columns, generatedC
         throw new TypeError('Provide every primary key field');
       }
       const { sql, values } = whereClause(keys);
-      const [rows] = await connection.execute(`SELECT ${projection} FROM ${quote(table)}${sql} LIMIT 1`, values);
+      const { rows } = await connection.query(`SELECT ${projection} FROM ${quote(table)}${sql} LIMIT 1`, values);
       return rows[0] ?? null;
     },
 
@@ -58,7 +58,7 @@ export default function createReadModel({ table, primaryKey, columns, generatedC
       const { sql, values } = whereClause(filters);
       const order = primaryKey.map(quote).join(', ');
       // limit/offset đã được kiểm tra là số nguyên an toàn.
-      const [rows] = await connection.execute(
+      const { rows } = await connection.query(
         `SELECT ${projection} FROM ${quote(table)}${sql} ORDER BY ${order} LIMIT ${limit} OFFSET ${offset}`,
         values,
       );

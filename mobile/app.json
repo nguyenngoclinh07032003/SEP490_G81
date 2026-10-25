@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "HRMSS",
+    "slug": "hrmss",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#087DEB"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.minhduc.hrmss"
+    },
+    "android": {
+      "package": "com.minhduc.hrmss",
+      "adaptiveIcon": {
+        "backgroundColor": "#087DEB",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

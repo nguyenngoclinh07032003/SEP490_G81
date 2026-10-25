@@ -1,6 +1,7 @@
 // Xuất tập trung các model.
 export { default as RoleModel } from './role.model.js';
 export { default as UserAccountModel } from './userAccount.model.js';
+export { default as UserInformationModel } from './userInformation.model.js';
 export { default as CustomerModel } from './customer.model.js';
 export { default as ServiceAddressModel } from './serviceAddress.model.js';
 export { default as ServiceCategoryModel } from './serviceCategory.model.js';

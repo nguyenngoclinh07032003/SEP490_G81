@@ -22,7 +22,7 @@ const QuotationModel = createReadModel({
     'updated_at',
     'initial_request_id',
   ],
-  // Cột do MySQL tự tính.
+  // Cột do DB tự tính (Generated Column).
   generatedColumns: ["initial_request_id"],
   hiddenColumns: [],
 });

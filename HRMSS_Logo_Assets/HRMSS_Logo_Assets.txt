@@ -1,0 +1,28 @@
+HRMSS_Logo_Assets/
+│
+├── source/
+│   └── Logo SVG có thể chỉnh sửa
+│
+├── mobile/
+│   ├── Icon 1024x1024
+│   ├── Icon 512x512
+│   └── Icon 192x192
+│
+├── website/
+│   ├── Logo ngang 200x60
+│   ├── Logo ngang 300x90
+│   └── Logo biểu tượng
+│
+├── favicon/
+│   ├── favicon.ico
+│   ├── apple-touch-icon-180.png
+│   └── PWA icons
+│
+├── android_adaptive/
+│   ├── foreground
+│   └── background
+│
+├── reference/
+│   └── Ảnh logo ý tưởng ban đầu
+│
+└── README.txt

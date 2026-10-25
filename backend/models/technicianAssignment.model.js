@@ -22,7 +22,7 @@ const TechnicianAssignmentModel = createReadModel({
     'created_at',
     'updated_at',
   ],
-  // Cột do MySQL tự tính.
+  // Cột do DB tự tính (Generated Column).
   generatedColumns: ["active_technician_id"],
   hiddenColumns: [],
 });

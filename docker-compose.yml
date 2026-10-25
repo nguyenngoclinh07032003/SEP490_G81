@@ -1,0 +1,53 @@
+services:
+  # 1. Dịch vụ REDIS (In-memory Cache & Token Blacklist)
+  redis:
+    image: redis:7-alpine
+    container_name: hrmss-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    command: redis-server --appendonly yes
+
+  # 2. Dịch vụ POSTGRESQL (Dùng khi deploy VPS hoặc khi không cài Postgres trên máy)
+  postgres:
+    image: postgres:16-alpine
+    container_name: hrmss-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-123}
+      POSTGRES_DB: ${DB_NAME:-hrmss}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # 3. Dịch vụ BACKEND API (Node.js Express)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hrmss-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-123}
+      - DB_NAME=${DB_NAME:-hrmss}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  redisdata:
+  pgdata:
+
