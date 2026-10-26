@@ -1,9 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-export async function getHealth() {
-  const response = await fetch(`${API_URL}/api/health`);
-  if (!response.ok) {
-    throw new Error('API health check failed');
-  }
-  return response.json();
-}
+/**
+ * Backward compatibility: Re-export toàn bộ từ index.js
+ */
+export * from './index.js';
+export { default } from './index.js';

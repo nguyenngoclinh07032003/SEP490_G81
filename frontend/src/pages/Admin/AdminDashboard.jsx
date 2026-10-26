@@ -12,7 +12,7 @@ import {
   CheckCircle2,
   Lock
 } from 'lucide-react';
-import { getHealth } from '../../services/api';
+import { getHealth } from '../../services';
 
 export default function AdminDashboard() {
   const [healthStatus, setHealthStatus] = useState({ status: 'checking', message: 'Đang kiểm tra...' });

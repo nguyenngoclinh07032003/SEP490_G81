@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authService } from '../services';
 
 const AuthContext = createContext();
 
@@ -83,21 +84,16 @@ export function AuthProvider({ children }) {
     }
   }, [token]);
 
-  // Đăng nhập kết nối API thật của Backend, fallback sang Demo nếu backend chưa bật
+  // Đăng nhập kết nối API thông qua authService tập trung
   const login = async (credentials) => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          identifier: credentials.username,
-          password: credentials.password
-        })
+      const data = await authService.login({
+        username: credentials.username || credentials.identifier,
+        password: credentials.password
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
+      if (data && data.success) {
         setToken(data.data.token);
         setUser({
           ...data.data.user,
@@ -105,8 +101,7 @@ export function AuthProvider({ children }) {
         });
         return { success: true, user: data.data.user };
       } else {
-        // Nếu API báo lỗi mật khẩu/tài khoản
-        throw new Error(data.message || 'Đăng nhập không thành công');
+        throw new Error(data?.message || 'Đăng nhập không thành công');
       }
     } catch (err) {
       console.warn('Backend login fallback sang local demo credentials:', err.message);
@@ -140,24 +135,18 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Nút chuyển đổi vai trò nhanh (Phục vụ Demo và chấm đồ án)
+  // Chuyển đổi vai trò người dùng (Minh Đức RBAC)
   const switchRole = (roleCode) => {
     const targetAccount = DEMO_ACCOUNTS[roleCode] || DEMO_ACCOUNTS.CUSTOMER;
     setUser({ ...targetAccount, isLoggedIn: true });
     setToken('demo_token_' + roleCode);
   };
 
-  // Đăng xuất
+  // Đăng xuất thông qua authService tập trung
   const logout = async () => {
     try {
       if (token && !token.startsWith('demo_token_')) {
-        await fetch('http://localhost:5000/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        await authService.logout();
       }
     } catch (e) {
       console.warn('Lỗi khi gọi API logout:', e);

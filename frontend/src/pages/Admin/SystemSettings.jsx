@@ -11,7 +11,7 @@ import {
   Cpu,
   Clock
 } from 'lucide-react';
-import { getHealth } from '../../services/api';
+import { getHealth } from '../../services';
 
 export default function SystemSettings() {
   const [testing, setTesting] = useState(false);

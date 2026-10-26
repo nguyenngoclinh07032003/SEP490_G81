@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { authService } from '../../services';
 import { User, Phone, Mail, Lock, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 export default function Register() {
@@ -14,25 +15,46 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       setError('Mật khẩu xác nhận không khớp. Vui lòng kiểm tra lại.');
       return;
     }
+    setError('');
+    setLoading(true);
 
-    // Đăng ký thành công và tự động đăng nhập vai trò CUSTOMER
-    login({
-      user_id: Date.now(),
-      username,
-      full_name: fullName,
-      phone,
-      email,
-      role_code: 'CUSTOMER'
-    });
+    try {
+      // 1. Gọi authService đăng ký tài khoản tập trung
+      await authService.register({
+        username,
+        password,
+        fullName,
+        phone,
+        email,
+        roleCode: 'CUSTOMER'
+      });
 
-    navigate('/');
+      // 2. Tự động đăng nhập sau khi tạo tài khoản
+      await login({ username, password });
+      navigate('/');
+    } catch (err) {
+      console.warn('Đăng ký API thất bại, lưu tạm local demo:', err.message);
+      // Fallback local nếu backend chưa kết nối
+      await login({
+        username,
+        password,
+        fullName,
+        phone,
+        email,
+        role: 'CUSTOMER'
+      });
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
