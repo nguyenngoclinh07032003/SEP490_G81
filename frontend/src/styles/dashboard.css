@@ -4,24 +4,25 @@
 
 .dashboard-root {
   display: flex;
-  min-height: 100vh;
+  min-height: calc(100vh - 42px);
   background-color: var(--slate-100);
 }
 
-/* Sidebar */
+/* Sidebar (Sáng sủa, Hiện đại, Dễ nhìn) */
 .dashboard-sidebar {
   width: 260px;
-  background-color: var(--navy-900);
-  color: #FFFFFF;
+  background-color: #FFFFFF;
+  color: #0F172A;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: calc(100vh - 42px);
   z-index: 100;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid #E2E8F0;
+  box-shadow: 1px 0 4px rgba(0, 0, 0, 0.02);
 }
 
 .sidebar-header {
@@ -29,7 +30,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid #E2E8F0;
 }
 
 .sidebar-logo {
@@ -49,7 +50,7 @@
 .nav-section-title {
   font-size: 0.68rem;
   font-weight: 700;
-  color: var(--slate-400);
+  color: #64748B;
   text-transform: uppercase;
   letter-spacing: 0.75px;
   padding: 12px 12px 6px;
@@ -61,24 +62,24 @@
   gap: 12px;
   padding: 10px 14px;
   border-radius: var(--radius-md);
-  color: var(--slate-300);
+  color: #475569;
   font-size: 0.88rem;
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
   transition: all 0.2s ease;
 }
 
 .sidebar-link:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #FFFFFF;
+  background-color: #F0F9FF;
+  color: #0284C7;
   transform: translateX(2px);
 }
 
 .sidebar-link.active {
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.3) 0%, rgba(37, 99, 235, 0.1) 100%);
-  color: #60A5FA;
-  font-weight: 600;
-  border-left: 3px solid #3B82F6;
+  background: #F0F9FF;
+  color: #0284C7;
+  font-weight: 700;
+  border-left: 3px solid #0284C7;
 }
 
 .sidebar-link .icon {
@@ -87,8 +88,8 @@
 
 .sidebar-footer {
   padding: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid #E2E8F0;
+  background: #F8FAFC;
 }
 
 .user-mini-profile {
@@ -117,17 +118,18 @@
 }
 
 .user-mini-name {
-  font-size: 0.84rem;
-  font-weight: 600;
-  color: #FFFFFF;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #0F172A !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .user-mini-role {
-  font-size: 0.72rem;
-  color: var(--slate-400);
+  font-size: 0.75rem;
+  color: #475569 !important;
+  font-weight: 600;
 }
 
 /* Dashboard Main Content Container */
@@ -283,3 +285,63 @@
     padding: 16px;
   }
 }
+
+/* ==========================================================================
+   STAT GRID & KPI CARDS (Admin / Manager / Staff Dashboards)
+   ========================================================================== */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  border-color: #BAE6FD;
+}
+
+.stat-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.stat-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #64748B;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.stat-trend {
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+

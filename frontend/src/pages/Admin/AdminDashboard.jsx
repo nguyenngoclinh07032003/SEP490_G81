@@ -44,7 +44,7 @@ export default function AdminDashboard() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Quản Trị Hệ Thống (System Administration)</h1>
-          <p className="page-subtitle">Giám sát tổng quan người dùng, phân quyền vai trò và an toàn hạ tầng HRMSS</p>
+          <p className="page-subtitle">Giám sát tổng quan người dùng, phân quyền vai trò và an toàn hạ tầng Dịch Vụ Minh Đức</p>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <div className="badge badge-role-admin" style={{ padding: '8px 14px', fontSize: '0.82rem' }}>

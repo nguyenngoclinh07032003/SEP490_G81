@@ -4,31 +4,31 @@
    ========================================================================== */
 
 :root {
-  /* Điện Máy Xanh Iconic Palette */
-  --dmx-blue: #0071AF;
-  --dmx-blue-dark: #004D7A;
-  --dmx-blue-light: #EBF5FA;
-  --dmx-blue-hover: #005F94;
-  --dmx-yellow: #FED700;
-  --dmx-yellow-dark: #E5C200;
-  --dmx-yellow-hover: #FFE033;
-  --dmx-red: #E11B1E;
-  --dmx-red-light: #FEE8E8;
+  /* Luminous, Eye-Friendly Brand Palette */
+  --dmx-blue: #0284C7;
+  --dmx-blue-dark: #0369A1;
+  --dmx-blue-light: #F0F9FF;
+  --dmx-blue-hover: #075985;
+  --dmx-yellow: #F59E0B;
+  --dmx-yellow-dark: #D97706;
+  --dmx-yellow-hover: #FBBF24;
+  --dmx-red: #EF4444;
+  --dmx-red-light: #FEF2F2;
 
   /* Standard Brand Aliases */
-  --primary: #0071AF;
-  --primary-hover: #005F94;
-  --primary-light: #EBF5FA;
-  --primary-dark: #004D7A;
+  --primary: #0284C7;
+  --primary-hover: #0369A1;
+  --primary-light: #F0F9FF;
+  --primary-dark: #075985;
   
-  --accent: #FED700;
-  --accent-hover: #FFE033;
+  --accent: #F59E0B;
+  --accent-hover: #D97706;
   --accent-text: #0F172A;
 
-  /* Slate & Neutral Grays */
-  --navy-900: #0B132B;
-  --navy-800: #1C2541;
-  --navy-700: #2C3E50;
+  /* Crisp Neutral & Slate Grays */
+  --navy-900: #0F172A;
+  --navy-800: #1E293B;
+  --navy-700: #334155;
   --slate-900: #0F172A;
   --slate-800: #1E293B;
   --slate-700: #334155;
@@ -62,8 +62,8 @@
   --role-staff-bg: #F0F9FF;
   --role-tech: #059669;
   --role-tech-bg: #ECFDF5;
-  --role-customer: #0071AF;
-  --role-customer-bg: #EBF5FA;
+  --role-customer: #0284C7;
+  --role-customer-bg: #F0F9FF;
 
   /* Geometry & Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -134,30 +134,32 @@ button, input, select, textarea {
   transform: scale(0.98);
 }
 
-/* Nút Vàng Điện Máy Xanh (Iconic Yellow CTA) */
+/* Nút Hổ Phách / Vàng Ấm (Warm Amber CTA - High Contrast WCAG AAA) */
 .btn-dmx-yellow {
-  background-color: var(--dmx-yellow);
-  color: #0F172A;
-  font-weight: 700;
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: #0F172A !important;
+  font-weight: 800;
   border: none;
-  box-shadow: var(--shadow-yellow);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
 }
 .btn-dmx-yellow:hover {
-  background-color: var(--dmx-yellow-hover);
-  box-shadow: 0 6px 18px rgba(254, 215, 0, 0.5);
+  background: linear-gradient(135deg, #FBBF24, #F59E0B);
+  color: #000000 !important;
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.45);
   transform: translateY(-1px);
 }
 
-/* Nút Xanh Điện Máy Xanh */
+/* Nút Xanh Dương Tươi Sáng */
 .btn-primary, .btn-dmx-blue {
-  background: linear-gradient(135deg, var(--dmx-blue), var(--dmx-blue-dark));
-  color: #FFFFFF;
+  background: linear-gradient(135deg, #0284C7, #0369A1);
+  color: #FFFFFF !important;
+  font-weight: 700;
   border: none;
-  box-shadow: var(--shadow-dmx);
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.28);
 }
 .btn-primary:hover, .btn-dmx-blue:hover {
-  background: linear-gradient(135deg, var(--dmx-blue-hover), #003B5C);
-  box-shadow: 0 6px 16px rgba(0, 113, 175, 0.35);
+  background: linear-gradient(135deg, #0369A1, #075985);
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.38);
   transform: translateY(-1px);
 }
 
@@ -198,9 +200,10 @@ button, input, select, textarea {
 }
 
 .badge-dmx-yellow {
-  background-color: var(--dmx-yellow);
-  color: #0F172A;
+  background-color: #FEF3C7;
+  color: #92400E;
   font-weight: 700;
+  border: 1px solid rgba(217, 119, 6, 0.2);
 }
 
 .badge-dmx-sale {
@@ -392,3 +395,56 @@ button, input, select, textarea {
     transform: scale(1) translateY(0);
   }
 }
+
+/* ==========================================================================
+   QUICK ROLE SWITCHER TOOLBAR (MINH DUC ROLE MANAGEMENT)
+   ========================================================================== */
+.role-switcher-banner {
+  background-color: #FFFFFF;
+  color: #1E293B;
+  padding: 6px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-bottom: 1px solid #E2E8F0;
+  font-size: 0.78rem;
+}
+
+.role-switcher-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.role-pill-btn {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  color: #475569;
+  border-radius: var(--radius-full);
+  padding: 4px 11px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.18s ease;
+}
+
+.role-pill-btn:hover {
+  background: #F0F9FF;
+  color: #0284C7;
+  border-color: #BAE6FD;
+}
+
+.role-pill-btn.active {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: #0F172A !important;
+  border-color: #F59E0B;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+}
+

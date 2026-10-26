@@ -15,7 +15,7 @@ app.use(express.json());
 app.get("/", (_req, res) => {
   res.json({
     message:
-      "Chào mừng đến với HRMSS API (Home Repair and Maintenance Service Management System)",
+      "Chào mừng đến với API Dịch Vụ Minh Đức (Minh Duc Home Maintenance & Repair Service System)",
     status: "ONLINE",
     endpoints: {
       health: "/api/health",
@@ -29,6 +29,6 @@ app.use("/api", apiRoutes);
 
 
 app.listen(port, () => {
-  console.log(`HRMSS API listening on port ${port}`);
-  console.log(`HRMSS API docs at http://localhost:${port}/api/health`);
+  console.log(`Minh Duc Service API listening on port ${port}`);
+  console.log(`API docs at http://localhost:${port}/api/health`);
 });

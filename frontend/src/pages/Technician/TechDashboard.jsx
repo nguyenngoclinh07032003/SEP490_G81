@@ -93,26 +93,26 @@ export default function TechDashboard() {
 
   return (
     <div>
-      {/* Header tổng kết nhanh của thợ */}
+      {/* Header tổng kết nhanh của thợ (Sáng sủa, Hiện đại) */}
       <div style={{
-        background: 'linear-gradient(135deg, var(--navy-900), #1E3A8A)',
+        background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
         color: '#FFFFFF',
         borderRadius: 'var(--radius-lg)',
         padding: '20px',
         marginBottom: '20px',
-        boxShadow: 'var(--shadow-md)'
+        boxShadow: '0 4px 16px rgba(2, 132, 199, 0.2)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>Xin chào Kỹ thuật viên,</span>
-            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, marginTop: '2px' }}>Trần Văn Nam</h2>
-            <div style={{ fontSize: '0.82rem', opacity: 0.85, marginTop: '4px' }}>
-              Chuyên môn: Điện Lạnh • Đánh giá: <strong>⭐ 4.95 / 5.0</strong>
+            <span style={{ fontSize: '0.8rem', color: '#E0F2FE' }}>Xin chào Kỹ thuật viên,</span>
+            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, marginTop: '2px', color: '#FFFFFF' }}>Trần Văn Nam</h2>
+            <div style={{ fontSize: '0.82rem', color: '#E0F2FE', marginTop: '4px' }}>
+              Chuyên môn: Điện Lạnh • Đánh giá: <strong>4.95 / 5.0</strong> (Rất tốt)
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>Thu nhập ước tính hôm nay</span>
-            <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#34D399' }}>850.000 đ</div>
+            <span style={{ fontSize: '0.75rem', color: '#E0F2FE' }}>Thu nhập ước tính hôm nay</span>
+            <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#FEF08A' }}>850.000 đ</div>
           </div>
         </div>
 
@@ -122,13 +122,13 @@ export default function TechDashboard() {
             onClick={() => setActiveTab('TODAY')}
             style={{
               flex: 1,
-              padding: '8px',
+              padding: '9px',
               borderRadius: 'var(--radius-md)',
               border: 'none',
-              background: activeTab === 'TODAY' ? '#FFFFFF' : 'rgba(255,255,255,0.15)',
-              color: activeTab === 'TODAY' ? 'var(--navy-900)' : '#FFFFFF',
+              background: activeTab === 'TODAY' ? '#FFFFFF' : 'rgba(255,255,255,0.18)',
+              color: activeTab === 'TODAY' ? '#0369A1' : '#FFFFFF',
               fontWeight: 700,
-              fontSize: '0.82rem',
+              fontSize: '0.84rem',
               cursor: 'pointer'
             }}
           >
@@ -138,13 +138,13 @@ export default function TechDashboard() {
             onClick={() => setActiveTab('HISTORY')}
             style={{
               flex: 1,
-              padding: '8px',
+              padding: '9px',
               borderRadius: 'var(--radius-md)',
               border: 'none',
-              background: activeTab === 'HISTORY' ? '#FFFFFF' : 'rgba(255,255,255,0.15)',
-              color: activeTab === 'HISTORY' ? 'var(--navy-900)' : '#FFFFFF',
+              background: activeTab === 'HISTORY' ? '#FFFFFF' : 'rgba(255,255,255,0.18)',
+              color: activeTab === 'HISTORY' ? '#0369A1' : '#FFFFFF',
               fontWeight: 700,
-              fontSize: '0.82rem',
+              fontSize: '0.84rem',
               cursor: 'pointer'
             }}
           >

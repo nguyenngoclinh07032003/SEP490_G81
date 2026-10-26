@@ -31,13 +31,11 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: #0F172A;
-  color: var(--text-main);
+  background-color: #F8FAFC;
+  color: #0F172A;
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   margin: 0;
+  padding: 0;
 }
 
 /* Khung giả lập điện thoại trên Desktop, tự động chiếm 100% trên Mobile thật */

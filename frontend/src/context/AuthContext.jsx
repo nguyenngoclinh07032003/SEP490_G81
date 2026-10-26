@@ -2,13 +2,13 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
-// Danh sách các tài khoản Demo đại diện cho 5 Roles trong đồ án SEP490
+// Danh sách các tài khoản Demo đại diện cho 5 Vai trò của Hệ thống Minh Đức
 export const DEMO_ACCOUNTS = {
   ADMIN: {
     userId: 1,
     username: 'admin',
     fullName: 'Quản trị viên Hệ thống',
-    email: 'admin@hrmss.vn',
+    email: 'admin@minhduc.vn',
     phone: '0901234567',
     role: 'ADMIN',
     roleName: 'Quản trị viên Hệ thống',
@@ -18,7 +18,7 @@ export const DEMO_ACCOUNTS = {
     userId: 2,
     username: 'manager_duc',
     fullName: 'Lê Minh Đức (Trưởng phòng)',
-    email: 'manager.duc@hrmss.vn',
+    email: 'manager.duc@minhduc.vn',
     phone: '0912345678',
     role: 'MANAGER',
     roleName: 'Quản lý Dịch vụ & Vận hành',
@@ -28,7 +28,7 @@ export const DEMO_ACCOUNTS = {
     userId: 3,
     username: 'staff_lan',
     fullName: 'Nguyễn Thị Lan (Điều phối)',
-    email: 'lan.coordinator@hrmss.vn',
+    email: 'lan.coordinator@minhduc.vn',
     phone: '0923456789',
     role: 'OFFICE_STAFF',
     roleName: 'Nhân viên Văn phòng / Tiếp nhận',
@@ -38,7 +38,7 @@ export const DEMO_ACCOUNTS = {
     userId: 4,
     username: 'tech_nam',
     fullName: 'Trần Văn Nam (Thợ chính)',
-    email: 'nam.tech@hrmss.vn',
+    email: 'nam.tech@minhduc.vn',
     phone: '0934567890',
     role: 'TECHNICIAN',
     roleName: 'Kỹ thuật viên Sửa chữa',

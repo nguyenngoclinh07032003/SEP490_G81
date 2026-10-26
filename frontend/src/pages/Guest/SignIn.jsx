@@ -73,7 +73,7 @@ export default function SignIn() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'radial-gradient(ellipse at top, #1E293B, #0B132B)',
+      background: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 45%, #F8FAFC 100%)',
       padding: '24px'
     }}>
       <div style={{
@@ -81,14 +81,15 @@ export default function SignIn() {
         width: '100%',
         background: '#FFFFFF',
         borderRadius: '24px',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.45)',
+        boxShadow: '0 20px 50px -10px rgba(2, 132, 199, 0.15), 0 4px 12px rgba(0, 0, 0, 0.03)',
+        border: '1.5px solid #BAE6FD',
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
         overflow: 'hidden'
       }}>
-        {/* Cột trái: Giới thiệu hệ thống HRMSS */}
+        {/* Cột trái: Giới thiệu hệ thống HRMSS (Sáng, Tươi Mới) */}
         <div style={{
-          background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%)',
+          background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
           color: '#FFFFFF',
           padding: '40px 32px',
           display: 'flex',
@@ -97,33 +98,43 @@ export default function SignIn() {
           position: 'relative'
         }}>
           <div>
-            <img
-              src="/brand/logo-horizontal-light-600x180.png"
-              alt="HRMSS Logo"
-              style={{ height: '48px', objectFit: 'contain', marginBottom: '24px' }}
-            />
-            <div className="badge" style={{ background: 'rgba(255,255,255,0.15)', color: '#FFFFFF', marginBottom: '16px' }}>
-              Đồ Án Tốt Nghiệp SEP490 • G81
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+              <img
+                src="/brand/logo-symbol-128.png"
+                alt="Logo Minh Đức"
+                style={{ height: '46px', width: '46px', objectFit: 'contain' }}
+              />
+              <div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.3px', lineHeight: 1.1 }}>
+                  DỊCH VỤ MINH ĐỨC
+                </div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#E0F2FE', letterSpacing: '0.5px', marginTop: '2px' }}>
+                  HỆ THỐNG KỸ THUẬT & ĐIỀU HÀNH
+                </div>
+              </div>
             </div>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, lineHeight: 1.3 }}>
-              Hệ Thống Quản Lý Dịch Vụ Sửa Chữa & Bảo Trì Tại Nhà
+            <div className="badge" style={{ background: '#FEF3C7', color: '#92400E', fontWeight: 800, border: '1px solid rgba(217, 119, 6, 0.25)', marginBottom: '16px' }}>
+              DỊCH VỤ MINH ĐỨC • HỆ THỐNG KỸ THUẬT
+            </div>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, lineHeight: 1.3, color: '#FFFFFF' }}>
+              Dịch Vụ Sửa Chữa & Bảo Trì Minh Đức
             </h2>
-            <p style={{ fontSize: '0.88rem', opacity: 0.85, marginTop: '12px', lineHeight: 1.6 }}>
-              Giải pháp số hóa toàn diện kết nối Khách Hàng, Đội ngũ Kỹ Thuật Viên, Điều Phối Viên và Ban Quản Lý trên cùng một nền tảng thời gian thực.
+            <p style={{ fontSize: '0.88rem', color: '#F0F9FF', marginTop: '12px', lineHeight: 1.6 }}>
+              Nền tảng dịch vụ kỹ thuật chất lượng cao, phục vụ nhanh chóng trong 60 phút, minh bạch giá cả và bảo hành chu đáo tận nhà.
             </p>
           </div>
 
-          <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.82rem', opacity: 0.9 }}>
+          <div style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.82rem', color: '#F0F9FF' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CheckCircle2 size={16} color="#34D399" />
+              <CheckCircle2 size={16} color="#A7F3D0" />
               <span>Phân quyền 5 vai trò (RBAC) chuẩn doanh nghiệp</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CheckCircle2 size={16} color="#34D399" />
+              <CheckCircle2 size={16} color="#A7F3D0" />
               <span>Bảo mật JWT + Redis Blacklist & Brute-force Lockout</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CheckCircle2 size={16} color="#34D399" />
+              <CheckCircle2 size={16} color="#A7F3D0" />
               <span>Cơ sở dữ liệu quan hệ PostgreSQL 29 bảng chuẩn ACID</span>
             </div>
           </div>
@@ -149,8 +160,8 @@ export default function SignIn() {
                 background: activeTab === 'FORM' ? '#FFFFFF' : 'transparent',
                 fontWeight: 700,
                 fontSize: '0.82rem',
-                color: activeTab === 'FORM' ? 'var(--primary-dark)' : 'var(--slate-600)',
-                boxShadow: activeTab === 'FORM' ? 'var(--shadow-sm)' : 'none',
+                color: activeTab === 'FORM' ? '#0284C7' : '#475569',
+                boxShadow: activeTab === 'FORM' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
                 cursor: 'pointer'
               }}
             >
@@ -166,8 +177,8 @@ export default function SignIn() {
                 background: activeTab === 'DEMO' ? '#FFFFFF' : 'transparent',
                 fontWeight: 700,
                 fontSize: '0.82rem',
-                color: activeTab === 'DEMO' ? 'var(--primary-dark)' : 'var(--slate-600)',
-                boxShadow: activeTab === 'DEMO' ? 'var(--shadow-sm)' : 'none',
+                color: activeTab === 'DEMO' ? '#0284C7' : '#475569',
+                boxShadow: activeTab === 'DEMO' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -248,18 +259,18 @@ export default function SignIn() {
 
                 <button
                   type="submit"
-                  className="btn btn-primary"
-                  style={{ width: '100%', padding: '12px', marginTop: '6px' }}
+                  className="btn btn-dmx-yellow"
+                  style={{ width: '100%', padding: '13px', marginTop: '6px', fontSize: '0.92rem' }}
                   disabled={loading}
                 >
-                  <span>{loading ? 'Đang xác thực...' : 'Đăng Nhập'}</span>
+                  <span>{loading ? 'Đang xác thực...' : 'ĐĂNG NHẬP VÀO HỆ THỐNG'}</span>
                   <ArrowRight size={18} />
                 </button>
               </form>
 
-              <div style={{ textAlign: 'center', marginTop: '18px', fontSize: '0.82rem', color: 'var(--slate-500)' }}>
+              <div style={{ textAlign: 'center', marginTop: '18px', fontSize: '0.82rem', color: '#64748B' }}>
                 Chưa có tài khoản khách hàng?{' '}
-                <Link to="/register" style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                <Link to="/register" style={{ fontWeight: 700, color: '#0284C7' }}>
                   Đăng ký ngay
                 </Link>
               </div>

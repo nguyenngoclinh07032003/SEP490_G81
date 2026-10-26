@@ -28,26 +28,34 @@ export default function TechnicianLayout() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--slate-100)' }}>
       <QuickRoleSwitcher />
 
-      {/* Top Header cho Thợ */}
+      {/* Top Header cho Thợ (Sáng sủa, Tươi mới) */}
       <header style={{
-        background: 'var(--navy-900)',
+        background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
         color: '#FFFFFF',
         padding: '12px 20px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        boxShadow: 'var(--shadow-md)',
+        boxShadow: '0 2px 10px rgba(2, 132, 199, 0.2)',
         position: 'sticky',
         top: 0,
         zIndex: 100
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <img
-            src="/brand/logo-horizontal-light-200x60.png"
-            alt="HRMSS Logo"
-            style={{ height: '32px', objectFit: 'contain' }}
+            src="/brand/logo-symbol-128.png"
+            alt="Logo Minh Đức"
+            style={{ height: '34px', width: '34px', objectFit: 'contain' }}
           />
-          <span className="badge badge-role-tech" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <div>
+            <div style={{ fontSize: '0.96rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.3px', lineHeight: 1.15 }}>
+              DỊCH VỤ MINH ĐỨC
+            </div>
+            <div style={{ fontSize: '0.66rem', fontWeight: 700, color: '#E0F2FE', letterSpacing: '0.4px', marginTop: '2px' }}>
+              ỨNG DỤNG KỸ THUẬT VIÊN
+            </div>
+          </div>
+          <span className="badge badge-role-tech" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}>
             <Wrench size={12} />
             <span>Kỹ thuật viên</span>
           </span>

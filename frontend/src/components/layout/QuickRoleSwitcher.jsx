@@ -23,12 +23,12 @@ export default function QuickRoleSwitcher() {
   return (
     <div className="role-switcher-banner">
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <Sparkles size={16} color="#FBBF24" />
-        <span style={{ fontWeight: 600, fontSize: '0.78rem', letterSpacing: '0.2px' }}>
-          SEP490 RBAC DEMO:
+        <Sparkles size={16} color="#F59E0B" />
+        <span style={{ fontWeight: 800, fontSize: '0.78rem', color: '#0F172A', letterSpacing: '0.2px' }}>
+          DỊCH VỤ MINH ĐỨC • PHÂN QUYỀN VAI TRÒ:
         </span>
-        <span style={{ opacity: 0.8, fontSize: '0.75rem' }}>
-          Đang xem với vai trò: <strong style={{ color: '#93C5FD' }}>{user?.roleName || user?.role}</strong>
+        <span style={{ color: '#475569', fontSize: '0.76rem' }}>
+          Đang truy cập: <strong style={{ color: '#0284C7' }}>{user?.roleName || user?.role}</strong>
         </span>
       </div>
 

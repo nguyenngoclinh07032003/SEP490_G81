@@ -1,11 +1,11 @@
 /* ==========================================================================
-   ĐIỆN MÁY XANH - THỢ TẬN TÂM PORTAL STYLES (HRMSS SEP490)
+   DỊCH VỤ MINH ĐỨC PORTAL STYLES
    ========================================================================== */
 
 /* Top Bar Cam Kết */
 .dmx-topbar {
-  background-color: var(--dmx-blue-dark);
-  color: #FFFFFF;
+  background-color: #0C4A6E;
+  color: #F0F9FF;
   font-size: 0.78rem;
   padding: 6px 24px;
   display: flex;
@@ -25,19 +25,20 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  opacity: 0.95;
+  color: #FFFFFF;
+  font-weight: 500;
 }
 
 /* Main Header DMX */
 .dmx-header {
-  background-color: var(--dmx-blue);
+  background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
   color: #FFFFFF;
   padding: 12px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  box-shadow: 0 4px 12px rgba(0, 77, 122, 0.2);
+  box-shadow: 0 3px 12px rgba(2, 132, 199, 0.16);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -60,8 +61,8 @@
 }
 
 .dmx-brand-subtitle {
-  font-size: 0.7rem;
-  color: var(--dmx-yellow);
+  font-size: 0.72rem;
+  color: #FEF3C7;
   font-weight: 700;
   letter-spacing: 0.5px;
 }
@@ -74,17 +75,19 @@
 
 .dmx-search-input {
   width: 100%;
-  padding: 10px 42px 10px 18px;
+  padding: 10px 44px 10px 18px;
   border-radius: var(--radius-full);
-  border: none;
+  border: 1px solid #E2E8F0;
   font-size: 0.88rem;
   background-color: #FFFFFF;
   color: var(--slate-900);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   outline: none;
+  transition: all 0.2s ease;
 }
 .dmx-search-input:focus {
-  box-shadow: 0 0 0 3px rgba(254, 215, 0, 0.5);
+  border-color: #0284C7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
 }
 
 .dmx-search-btn {
@@ -95,7 +98,7 @@
   width: 32px;
   height: 32px;
   border-radius: var(--radius-full);
-  background-color: var(--dmx-yellow);
+  background: linear-gradient(135deg, #F59E0B, #D97706);
   color: #0F172A;
   border: none;
   display: flex;
@@ -105,7 +108,7 @@
   transition: all 0.2s ease;
 }
 .dmx-search-btn:hover {
-  background-color: var(--dmx-yellow-hover);
+  background: linear-gradient(135deg, #FBBF24, #F59E0B);
 }
 
 .dmx-header-actions {
@@ -120,64 +123,85 @@
   gap: 8px;
   padding: 8px 14px;
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.15);
   color: #FFFFFF;
   text-decoration: none;
   font-size: 0.82rem;
   font-weight: 600;
   transition: all 0.2s ease;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 .dmx-header-btn:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.25);
   color: #FFFFFF;
 }
 
-/* Secondary Navigation Bar (Subnav DMX) */
+/* Secondary Navigation Bar (Subnav - Crisp White High Contrast) */
 .dmx-subnav {
-  background-color: #005F94;
-  color: #FFFFFF;
+  background-color: #FFFFFF;
+  color: #334155;
   padding: 0 24px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 8px;
   overflow-x: auto;
-  border-bottom: 2px solid var(--dmx-yellow);
+  border-bottom: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .dmx-subnav-item {
-  padding: 10px 8px;
-  font-size: 0.82rem;
+  padding: 11px 16px;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: #475569;
   text-decoration: none;
   display: flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
   position: relative;
-  transition: color 0.15s ease;
+  transition: all 0.15s ease;
+  border-radius: 6px;
+  margin: 3px 0;
 }
-.dmx-subnav-item:hover, .dmx-subnav-item.active {
-  color: var(--dmx-yellow);
+.dmx-subnav-item:hover {
+  color: #0284C7;
+  background-color: #F0F9FF;
+}
+.dmx-subnav-item.active {
+  color: #0284C7;
+  font-weight: 700;
+  background-color: #F0F9FF;
 }
 .dmx-subnav-item.active::after {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: -3px;
+  left: 12px;
+  right: 12px;
   height: 3px;
-  background-color: var(--dmx-yellow);
+  background-color: #0284C7;
+  border-radius: 2px;
 }
 
 /* Hero Section */
 .dmx-hero-banner {
-  background: linear-gradient(135deg, #0071AF 0%, #004D7A 100%);
+  background: linear-gradient(135deg, #0284C7 0%, #0369A1 60%, #0284C7 100%);
   color: #FFFFFF;
-  padding: 40px 24px;
+  padding: 44px 24px;
   position: relative;
   overflow: hidden;
+}
+.dmx-hero-banner::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .dmx-hero-container {
@@ -193,8 +217,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background-color: var(--dmx-yellow);
-  color: #0F172A;
+  background-color: #FEF3C7;
+  color: #92400E;
   padding: 6px 14px;
   border-radius: var(--radius-full);
   font-size: 0.8rem;
@@ -202,6 +226,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 16px;
+  border: 1px solid rgba(217, 119, 6, 0.2);
 }
 
 .dmx-hero-title {
@@ -214,7 +239,7 @@
 
 .dmx-hero-subtitle {
   font-size: 1rem;
-  opacity: 0.9;
+  color: #F0F9FF;
   margin-top: 12px;
   line-height: 1.6;
 }
@@ -225,8 +250,8 @@
   color: var(--slate-900);
   border-radius: var(--radius-xl);
   padding: 24px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-  border: 2px solid var(--dmx-yellow);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+  border: 2px solid #BAE6FD;
 }
 
 /* 4 Cam Kết Vàng DMX */

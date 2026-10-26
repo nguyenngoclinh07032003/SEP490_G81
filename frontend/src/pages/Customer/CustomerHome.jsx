@@ -36,7 +36,7 @@ export default function CustomerHome() {
 
   // 6 Ngành hàng thiết bị điện máy chính (Không dùng emoji icon)
   const categories = [
-    { id: 'AC', name: 'Điều hòa / Máy lạnh', priceFrom: 'Từ 150.000 đ', color: '#0071AF', bg: '#EBF5FA', badge: 'Bán chạy' },
+    { id: 'AC', name: 'Điều hòa / Máy lạnh', priceFrom: 'Từ 150.000 đ', color: '#0284C7', bg: '#F0F9FF', badge: 'Bán chạy' },
     { id: 'FRIDGE', name: 'Tủ lạnh & Tủ đông', priceFrom: 'Từ 180.000 đ', color: '#059669', bg: '#ECFDF5', badge: 'Chuyên sâu' },
     { id: 'WASH', name: 'Máy giặt & Sấy', priceFrom: 'Từ 250.000 đ', color: '#D97706', bg: '#FEF3C7', badge: 'Tháo lồng' },
     { id: 'HEATER', name: 'Bình nóng lạnh', priceFrom: 'Từ 180.000 đ', color: '#DC2626', bg: '#FEE2E2', badge: 'An toàn' },
@@ -252,24 +252,30 @@ export default function CustomerHome() {
         {/* =========================================================================
             3. THẺ THEO DÕI ĐƠN HÀNG THỜI GIAN THỰC (LIVE TRACKER)
            ========================================================================= */}
-        <div className="dmx-live-tracker">
+        <div className="dmx-live-tracker" style={{
+          background: '#FFFFFF',
+          borderRadius: 'var(--radius-lg)',
+          padding: '22px',
+          marginBottom: '28px',
+          boxShadow: '0 4px 20px rgba(2, 132, 199, 0.08)',
+          border: '1.5px solid #BAE6FD'
+        }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span className="badge badge-dmx-yellow">ĐANG XỬ LÝ</span>
-              <strong style={{ fontSize: '1.05rem', color: '#FFFFFF' }}>Mã đơn: #REQ-1003</strong>
-              <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>• Hôm nay: 09:30</span>
+              <strong style={{ fontSize: '1.05rem', color: '#0369A1' }}>Mã đơn: #REQ-1003</strong>
+              <span style={{ fontSize: '0.8rem', color: '#475569' }}>• Hôm nay: 09:30</span>
             </div>
             <button
               onClick={() => navigate('/my-requests')}
-              className="btn btn-sm"
-              style={{ background: 'rgba(255,255,255,0.15)', color: '#FFFFFF', border: 'none' }}
+              className="btn btn-sm btn-secondary"
             >
               <span>Xem chi tiết hành trình</span>
               <ArrowRight size={14} />
             </button>
           </div>
 
-          <div style={{ fontSize: '0.92rem', fontWeight: 600, marginTop: '8px', color: '#BAE6FD' }}>
+          <div style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '8px', color: '#0F172A' }}>
             Sửa máy giặt Electrolux cửa ngang 9kg (Rung lắc mạnh, kêu to)
           </div>
 
@@ -280,44 +286,45 @@ export default function CustomerHome() {
             gap: '8px',
             marginTop: '16px',
             paddingTop: '16px',
-            borderTop: '1px solid rgba(255,255,255,0.15)',
+            borderTop: '1px solid var(--slate-100)',
             textAlign: 'center'
           }}>
             <div>
               <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#10B981', color: '#FFFFFF', margin: '0 auto 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Check size={16} />
               </div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700 }}>Đã tiếp nhận</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0F172A' }}>Đã tiếp nhận</div>
             </div>
 
             <div>
               <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#10B981', color: '#FFFFFF', margin: '0 auto 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Check size={16} />
               </div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700 }}>Đã phân công</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0F172A' }}>Đã phân công</div>
             </div>
 
             <div>
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#FED700', color: '#0F172A', margin: '0 auto 6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#0284C7', color: '#FFFFFF', margin: '0 auto 6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
                 3
               </div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#FED700' }}>KTV đang đến nơi</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369A1' }}>KTV đang đến nơi</div>
             </div>
 
             <div>
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', color: '#FFFFFF', margin: '0 auto 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--slate-200)', color: 'var(--slate-500)', margin: '0 auto 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 4
               </div>
-              <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>Nghiệm thu</div>
+              <div style={{ fontSize: '0.75rem', color: '#475569' }}>Nghiệm thu</div>
             </div>
           </div>
 
           {/* Thông tin thợ phụ trách */}
           <div style={{
-            marginTop: '14px',
-            background: 'rgba(255,255,255,0.08)',
+            marginTop: '16px',
+            background: '#F0F9FF',
+            border: '1px solid #BAE6FD',
             borderRadius: 'var(--radius-md)',
-            padding: '10px 14px',
+            padding: '12px 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -325,12 +332,12 @@ export default function CustomerHome() {
             gap: '10px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#0071AF', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+              <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#0284C7', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>
                 TN
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>Trần Văn Nam (Kỹ thuật viên chính Minh Đức)</div>
-                <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Xe máy: 29E1-889.92 • Đánh giá: 4.95/5.0</div>
+                <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0F172A' }}>Trần Văn Nam (Kỹ thuật viên chính Minh Đức)</div>
+                <div style={{ fontSize: '0.75rem', color: '#475569' }}>Xe máy: 29E1-889.92 • Đánh giá: 4.95/5.0</div>
               </div>
             </div>
 
@@ -459,7 +466,7 @@ export default function CustomerHome() {
         }}>
           <div style={{ textAlign: 'center', marginBottom: '28px' }}>
             <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--dmx-blue-dark)' }}>
-              Quy Trình Phục Vụ 4 Bước Tiêu Chuẩn HRMSS
+              Quy Trình Phục Vụ 4 Bước Tiêu Chuẩn Minh Đức
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--slate-500)', marginTop: '4px' }}>
               Nhanh chóng, chuyên nghiệp và an tâm tuyệt đối cho mọi gia đình

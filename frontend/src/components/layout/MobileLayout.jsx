@@ -51,40 +51,43 @@ export default function MobileLayout() {
       {/* 1. Quick Role Switcher Banner cho Đồ án */}
       <QuickRoleSwitcher />
 
-      {/* 2. Thanh tiện ích chuyển đổi Desktop Portal vs Mobile App Frame */}
+      {/* 2. Thanh tiện ích chuyển đổi Desktop Portal vs Mobile App Frame (Sáng sủa, hiện đại) */}
       <div style={{
-        backgroundColor: '#0F172A',
-        color: '#FFFFFF',
-        padding: '5px 20px',
+        backgroundColor: '#F8FAFC',
+        color: '#334155',
+        padding: '6px 20px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        fontSize: '0.76rem'
+        fontSize: '0.76rem',
+        borderBottom: '1px solid #E2E8F0'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="badge badge-dmx-yellow" style={{ fontSize: '0.68rem', padding: '2px 6px' }}>
-            HRMSS
+          <span className="badge badge-dmx-yellow" style={{ fontSize: '0.68rem', padding: '2px 7px', fontWeight: 800 }}>
+            MINH ĐỨC
           </span>
-          <span style={{ opacity: 0.85 }}>Hệ Thống Quản Lý Dịch Vụ Sửa Chữa & Bảo Trì Tại Nhà</span>
+          <span style={{ color: '#475569', fontWeight: 600 }}>Dịch Vụ Sửa Chữa & Bảo Trì Thiết Bị Minh Đức</span>
         </div>
 
         <button
           onClick={() => setIsPhoneFrame(!isPhoneFrame)}
           style={{
-            background: 'rgba(255,255,255,0.15)',
-            border: '1px solid rgba(255,255,255,0.25)',
-            color: '#FFFFFF',
+            background: '#FFFFFF',
+            border: '1px solid #CBD5E1',
+            color: '#0F172A',
             borderRadius: 'var(--radius-full)',
-            padding: '3px 12px',
+            padding: '4px 12px',
             fontSize: '0.72rem',
+            fontWeight: 600,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
             transition: 'all 0.2s ease'
           }}
         >
-          {isPhoneFrame ? <Monitor size={13} color="#FED700" /> : <Smartphone size={13} color="#FED700" />}
+          {isPhoneFrame ? <Monitor size={13} color="#0284C7" /> : <Smartphone size={13} color="#0284C7" />}
           <span>{isPhoneFrame ? 'Chuyển Màn Hình Rộng (Web Portal)' : 'Mô Phỏng Khung Điện Thoại (App Frame)'}</span>
         </button>
       </div>
@@ -121,13 +124,13 @@ export default function MobileLayout() {
           <header className="dmx-header">
             <Link to="/" className="dmx-brand">
               <img
-                src="/brand/logo-horizontal-light-200x60.png"
-                alt="HRMSS Logo"
-                style={{ height: '38px', objectFit: 'contain' }}
+                src="/brand/logo-symbol-128.png"
+                alt="Logo Minh Đức"
+                style={{ height: '38px', width: '38px', objectFit: 'contain' }}
               />
               <div style={{ borderLeft: '1px solid rgba(255,255,255,0.25)', paddingLeft: '10px' }}>
                 <div className="dmx-brand-title">DỊCH VỤ MINH ĐỨC</div>
-                <div className="dmx-brand-subtitle">HỆ THỐNG SỬA CHỮA HRMSS</div>
+                <div className="dmx-brand-subtitle">CHUYÊN NGHIỆP • UY TÍN • TẬN TÂM</div>
               </div>
             </Link>
 
@@ -236,7 +239,7 @@ export default function MobileLayout() {
               {isRootTab ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <img src="/brand/logo-symbol-128.png" alt="Logo" style={{ height: '28px' }} />
-                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>HRMSS MINH ĐỨC</span>
+                  <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>DỊCH VỤ MINH ĐỨC</span>
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -299,10 +302,10 @@ export default function MobileLayout() {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                 <img src="/brand/logo-symbol-128.png" alt="Logo" style={{ height: '32px' }} />
-                <strong style={{ fontSize: '1.05rem', color: '#FFFFFF' }}>HRMSS • DỊCH VỤ MINH ĐỨC</strong>
+                <strong style={{ fontSize: '1.05rem', color: '#FFFFFF' }}>DỊCH VỤ MINH ĐỨC</strong>
               </div>
               <p style={{ color: 'var(--slate-400)', fontSize: '0.82rem', lineHeight: 1.6, marginBottom: '14px' }}>
-                Hệ thống quản lý dịch vụ bảo trì, sửa chữa và lắp đặt thiết bị gia dụng tại nhà. Phục vụ nhanh chóng với đội ngũ kỹ thuật viên chuyên nghiệp.
+                Hệ thống dịch vụ bảo trì, sửa chữa và lắp đặt thiết bị điện tử, điện lạnh gia dụng tận nhà. Phục vụ chuyên nghiệp 24/7, báo giá minh bạch, linh kiện chính hãng.
               </p>
               <div style={{ fontSize: '0.82rem', color: 'var(--dmx-yellow)', fontWeight: 700 }}>
                 Hotline hỗ trợ: 1900 6868 (8:00 - 21:00)
@@ -336,14 +339,14 @@ export default function MobileLayout() {
               <p style={{ color: 'var(--slate-400)', fontSize: '0.82rem', lineHeight: 1.6 }}>
                 <strong>Hà Nội:</strong> Cầu Giấy, Hà Đông, Đống Đa, Thanh Xuân, Tây Hồ, Ba Đình, Nam Từ Liêm, Bắc Từ Liêm, Hai Bà Trưng, Hoàng Mai.
               </p>
-              <div style={{ marginTop: '14px', padding: '8px 12px', background: 'rgba(255,255,255,0.06)', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem' }}>
-                Đồ án Tốt Nghiệp SEP490 • Nhóm G81
+              <div style={{ marginTop: '14px', padding: '8px 12px', background: 'rgba(255,255,255,0.06)', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', color: '#CBD5E1' }}>
+                Hotline 24/7: 1900 6868 • Minh Đức Service
               </div>
             </div>
           </div>
 
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', textAlign: 'center', fontSize: '0.78rem', color: 'var(--slate-500)' }}>
-            © 2026 HRMSS Minh Đức - Hệ thống quản lý dịch vụ bảo trì sửa chữa tại nhà.
+            © 2026 Dịch Vụ Minh Đức - Trung tâm bảo trì, sửa chữa thiết bị điện lạnh & gia dụng.
           </div>
         </footer>
       )}

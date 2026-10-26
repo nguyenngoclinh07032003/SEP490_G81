@@ -22,11 +22,11 @@ export default function UserManagement() {
 
   // Danh sách tài khoản người dùng mẫu trong database
   const [users, setUsers] = useState([
-    { id: 1, username: 'admin', fullName: 'Quản Trị Viên Hệ Thống', email: 'admin@hrmss.vn', phone: '0901234567', role: 'ADMIN', status: 'ACTIVE', createdAt: '2026-01-10' },
-    { id: 2, username: 'manager_duc', fullName: 'Lê Minh Đức', email: 'manager.duc@hrmss.vn', phone: '0912345678', role: 'MANAGER', status: 'ACTIVE', createdAt: '2026-01-12' },
-    { id: 3, username: 'staff_lan', fullName: 'Nguyễn Thị Lan', email: 'lan.coordinator@hrmss.vn', phone: '0923456789', role: 'OFFICE_STAFF', status: 'ACTIVE', createdAt: '2026-01-15' },
-    { id: 4, username: 'tech_nam', fullName: 'Trần Văn Nam', email: 'nam.tech@hrmss.vn', phone: '0934567890', role: 'TECHNICIAN', status: 'ACTIVE', createdAt: '2026-01-20' },
-    { id: 5, username: 'tech_hoang', fullName: 'Phạm Huy Hoàng', email: 'hoang.tech@hrmss.vn', phone: '0934567891', role: 'TECHNICIAN', status: 'ACTIVE', createdAt: '2026-02-01' },
+    { id: 1, username: 'admin', fullName: 'Quản Trị Viên Hệ Thống', email: 'admin@minhduc.vn', phone: '0901234567', role: 'ADMIN', status: 'ACTIVE', createdAt: '2026-01-10' },
+    { id: 2, username: 'manager_duc', fullName: 'Lê Minh Đức', email: 'manager.duc@minhduc.vn', phone: '0912345678', role: 'MANAGER', status: 'ACTIVE', createdAt: '2026-01-12' },
+    { id: 3, username: 'staff_lan', fullName: 'Nguyễn Thị Lan', email: 'lan.coordinator@minhduc.vn', phone: '0923456789', role: 'OFFICE_STAFF', status: 'ACTIVE', createdAt: '2026-01-15' },
+    { id: 4, username: 'tech_nam', fullName: 'Trần Văn Nam', email: 'nam.tech@minhduc.vn', phone: '0934567890', role: 'TECHNICIAN', status: 'ACTIVE', createdAt: '2026-01-20' },
+    { id: 5, username: 'tech_hoang', fullName: 'Phạm Huy Hoàng', email: 'hoang.tech@minhduc.vn', phone: '0934567891', role: 'TECHNICIAN', status: 'ACTIVE', createdAt: '2026-02-01' },
     { id: 6, username: 'khanhnx', fullName: 'Nguyễn Xuân Khánh', email: 'khanhnx@gmail.com', phone: '0987654321', role: 'CUSTOMER', status: 'ACTIVE', createdAt: '2026-02-14' },
     { id: 7, username: 'customer_minh', fullName: 'Trần Quang Minh', email: 'minh.tq@gmail.com', phone: '0976543210', role: 'CUSTOMER', status: 'ACTIVE', createdAt: '2026-02-18' },
     { id: 8, username: 'user_suspicious', fullName: 'Tài Khoản Tạm Khóa', email: 'baduser@domain.com', phone: '0999999999', role: 'CUSTOMER', status: 'SUSPENDED', createdAt: '2026-02-20' },
@@ -254,7 +254,7 @@ export default function UserManagement() {
                   <label className="form-label">Email</label>
                   <input
                     type="email"
-                    placeholder="kien.tech@hrmss.vn"
+                    placeholder="kien.tech@minhduc.vn"
                     value={formData.email}
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
                     className="form-control"

@@ -98,12 +98,22 @@ export default function DashboardLayout() {
       <div className="dashboard-root">
         {/* Sidebar */}
         <aside className={`dashboard-sidebar ${mobileOpen ? 'open' : ''}`}>
-          <div className="sidebar-header">
-            <img
-              src="/brand/logo-horizontal-light-600x180.png"
-              alt="HRMSS Logo"
-              className="sidebar-logo"
-            />
+          <div className="sidebar-header" style={{ padding: '16px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <img
+                src="/brand/logo-symbol-128.png"
+                alt="Logo Minh Đức"
+                style={{ height: '36px', width: '36px', objectFit: 'contain' }}
+              />
+              <div>
+                <div style={{ fontSize: '0.98rem', fontWeight: 900, color: '#0284C7', letterSpacing: '-0.3px', lineHeight: 1.15 }}>
+                  DỊCH VỤ MINH ĐỨC
+                </div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748B', letterSpacing: '0.4px', marginTop: '2px' }}>
+                  HỆ THỐNG ĐIỀU HÀNH
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="sidebar-nav">
@@ -147,7 +157,7 @@ export default function DashboardLayout() {
                 onClick={handleLogout}
                 className="icon-btn"
                 title="Đăng xuất"
-                style={{ background: 'transparent', borderColor: 'rgba(255,255,255,0.15)', color: '#CBD5E1' }}
+                style={{ background: '#FFFFFF', border: '1px solid #CBD5E1', color: '#475569', borderRadius: '8px', cursor: 'pointer' }}
               >
                 <LogOut size={16} />
               </button>
