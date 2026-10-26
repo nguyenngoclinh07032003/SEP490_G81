@@ -1,0 +1,18 @@
+import { useState } from 'react';
+import Icon from './Icon.jsx';
+
+const devices = [['ac_unit', 'Điều hòa'], ['local_laundry_service', 'Máy giặt'], ['kitchen', 'Tủ lạnh'], ['water_heater', 'Bình nóng lạnh']];
+
+export default function AppScreenPreview({ type }) {
+  const [selectedDevice, setSelectedDevice] = useState('Điều hòa');
+  return <div className={`mobile-preview mobile-preview-${type}`}>
+    <div className="mobile-preview-notch" />
+    <div className="mobile-preview-glass">
+      <div className="mobile-preview-status"><strong>09:41</strong><span><Icon name="wifi" /><Icon name="battery_full" /></span></div>
+      <div className="mobile-preview-brand"><img src="/LogoHRMSS.png" alt="HRMSS" /><span>GIAO DIỆN MINH HỌA</span></div>
+      {type === 'booking' && <div className="mobile-preview-body"><div><p className="mobile-preview-greeting">Xin chào bạn!</p><h3>Hôm nay bạn cần<br />hỗ trợ thiết bị nào?</h3><p className="mobile-preview-muted">Chọn dịch vụ phù hợp với ngôi nhà.</p></div><div className="preview-device-grid">{devices.map(([icon, name]) => <button type="button" key={name} aria-pressed={selectedDevice === name} className={selectedDevice === name ? 'selected' : ''} onClick={() => setSelectedDevice(name)}><Icon name={icon} /><strong>{name}</strong></button>)}</div><div className="preview-tip"><Icon name="verified_user" /><span>Minh bạch chi phí<br /><strong>An tâm từng bước</strong></span></div><p className="preview-choice" role="status">Đang chọn: <strong>{selectedDevice}</strong></p><a className="preview-action" href="/dich-vu">Khám phá dịch vụ<Icon name="arrow_forward" /></a></div>}
+      {type === 'tracking' && <div className="mobile-preview-body"><h3>Theo dõi yêu cầu</h3><div className="preview-map" aria-label="Sơ đồ hành trình minh họa"><svg viewBox="0 0 240 140" aria-hidden="true"><path d="M-20 34L260 110M38 -20L110 160M170 -10L146 160" stroke="white" strokeWidth="18" fill="none" /><path d="M68 30L90 60L160 84" stroke="#1d4ed8" strokeWidth="5" strokeDasharray="6 5" fill="none" /><circle cx="68" cy="30" r="8" fill="#1d4ed8" /><circle cx="160" cy="84" r="8" fill="#ea6803" /></svg><span><Icon name="two_wheeler" />Kỹ thuật viên đang tới</span></div><div className="preview-technician"><span className="icon-box"><Icon name="engineering" /></span><div><strong>Kỹ thuật viên Minh Đức</strong><small>Thông tin liên hệ trong ứng dụng</small></div></div><ol className="preview-timeline">{['Đã tiếp nhận yêu cầu', 'Đang di chuyển', 'Kiểm tra & Báo giá', 'Nghiệm thu & Bảo hành'].map((step, index) => <li key={step} className={index < 2 ? 'complete' : ''}><Icon name={index === 0 ? 'check_circle' : index === 1 ? 'radio_button_checked' : 'radio_button_unchecked'} />{step}</li>)}</ol><div className="preview-tip"><Icon name="info" /><span>Trạng thái và hành trình minh họa</span></div></div>}
+      {type === 'warranty' && <div className="mobile-preview-body"><h3>Sổ bảo hành điện tử</h3><div className="preview-warranty-pass"><Icon name="verified_user" /><span>HỒ SƠ THIẾT BỊ</span><strong>Điều hòa gia đình</strong><p>Bảo dưỡng & Kiểm tra</p><div><span>Mã hồ sơ</span><b>#MD-2026</b></div></div><h4>Lịch sử dịch vụ</h4><div className="preview-history"><Icon name="task_alt" /><div><strong>Bảo dưỡng định kỳ</strong><small>Đã hoàn tất · Đã nghiệm thu</small></div></div><div className="preview-history"><Icon name="receipt_long" /><div><strong>Thông tin hạng mục</strong><small>Chi tiết vật tư và công thực hiện</small></div></div><div className="preview-tip"><Icon name="folder_open" /><span>Tra cứu hồ sơ trong cùng một nơi</span></div><a className="preview-action" href="/blog?article=bao-hanh-dien-tu">Tìm hiểu bảo hành số<Icon name="arrow_forward" /></a></div>}
+    </div>
+  </div>;
+}
