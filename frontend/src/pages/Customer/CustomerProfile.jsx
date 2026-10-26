@@ -50,7 +50,7 @@ export default function CustomerProfile() {
   };
 
   return (
-    <div style={{ padding: '16px' }}>
+    <div style={{ maxWidth: '800px', margin: '20px auto', padding: '0 16px' }}>
       {/* Profile Header Card */}
       <div className="card" style={{
         margin: 0,

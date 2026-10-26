@@ -111,15 +111,14 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   padding-bottom: 80px; /* Chừa khoảng cho Bottom Nav */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .app-body::-webkit-scrollbar {
-  width: 4px;
-}
-
-.app-body::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: var(--radius-full);
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Bottom Navigation Bar dưới đáy App */

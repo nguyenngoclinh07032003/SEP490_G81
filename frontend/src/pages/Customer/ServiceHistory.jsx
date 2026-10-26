@@ -51,7 +51,7 @@ export default function ServiceHistory() {
   };
 
   return (
-    <div style={{ padding: '16px' }}>
+    <div style={{ maxWidth: '960px', margin: '20px auto', padding: '0 16px' }}>
       <div style={{
         background: 'linear-gradient(135deg, #065F46, #047857)',
         color: 'white',

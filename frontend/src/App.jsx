@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 // Import các file CSS của Design System & Layouts
 import './styles/design-system.css';
 import './styles/dashboard.css';
+import './styles/dienmayxanh.css';
 import './styles/mobile.css';
 
 // Components Phân quyền & Layout

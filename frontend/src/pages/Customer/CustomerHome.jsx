@@ -1,267 +1,675 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { 
-  Wrench, 
-  Wind, 
-  Refrigerator, 
-  Flame, 
-  Zap, 
-  ArrowRight, 
-  Calendar, 
-  Clock, 
-  CheckCircle2, 
-  PhoneCall, 
-  ShieldCheck 
+import {
+  Wrench,
+  Wind,
+  Refrigerator,
+  Flame,
+  Zap,
+  ArrowRight,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  PhoneCall,
+  ShieldCheck,
+  Award,
+  Sparkles,
+  MapPin,
+  Check,
+  Send,
+  X,
+  UserCheck
 } from 'lucide-react';
 
 export default function CustomerHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // State cho Quick Booking Modal
+  const [showQuickBook, setShowQuickBook] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
+  const [bookingPhone, setBookingPhone] = useState(user?.phone || '0987654321');
+  const [bookingAddress, setBookingAddress] = useState('Số 45 Hoàng Quốc Việt, Cầu Giấy, Hà Nội');
+  const [bookingTime, setBookingTime] = useState('Sớm nhất (Trong 60 phút)');
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+
+  // 6 Ngành hàng thiết bị điện máy chính (Không dùng emoji icon)
   const categories = [
-    { id: 1, name: 'Điều hòa / Máy lạnh', icon: Wind, color: '#087DEB', bg: '#EBF4FE' },
-    { id: 2, name: 'Tủ lạnh & Tủ đông', icon: Refrigerator, color: '#059669', bg: '#ECFDF5' },
-    { id: 3, name: 'Máy giặt & Sấy', icon: Wrench, color: '#D97706', bg: '#FEF3C7' },
-    { id: 4, name: 'Bình nóng lạnh', icon: Flame, color: '#DC2626', bg: '#FEE2E2' },
-    { id: 5, name: 'Hệ thống Điện gia dụng', icon: Zap, color: '#7C3AED', bg: '#F3E8FF' },
+    { id: 'AC', name: 'Điều hòa / Máy lạnh', priceFrom: 'Từ 150.000 đ', color: '#0071AF', bg: '#EBF5FA', badge: 'Bán chạy' },
+    { id: 'FRIDGE', name: 'Tủ lạnh & Tủ đông', priceFrom: 'Từ 180.000 đ', color: '#059669', bg: '#ECFDF5', badge: 'Chuyên sâu' },
+    { id: 'WASH', name: 'Máy giặt & Sấy', priceFrom: 'Từ 250.000 đ', color: '#D97706', bg: '#FEF3C7', badge: 'Tháo lồng' },
+    { id: 'HEATER', name: 'Bình nóng lạnh', priceFrom: 'Từ 180.000 đ', color: '#DC2626', bg: '#FEE2E2', badge: 'An toàn' },
+    { id: 'ELEC', name: 'Hệ thống điện nước', priceFrom: 'Từ 150.000 đ', color: '#7C3AED', bg: '#F3E8FF', badge: '24/7' },
+    { id: 'FAN', name: 'Quạt & Máy lọc khí', priceFrom: 'Từ 120.000 đ', color: '#0284C7', bg: '#E0F2FE', badge: 'Tiết kiệm' },
   ];
 
+  // Bảng giá dịch vụ nổi bật
   const popularServices = [
-    { id: 1, name: 'Bảo dưỡng, vệ sinh điều hòa treo tường', price: '150.000 đ', category: 'Điều hòa' },
-    { id: 2, name: 'Nạp gas R32/R410A điều hòa Inverter', price: '350.000 đ', category: 'Điều hòa' },
-    { id: 3, name: 'Kiểm tra & sửa tủ lạnh không mát', price: '200.000 đ', category: 'Tủ lạnh' },
-    { id: 4, name: 'Vệ sinh lồng giặt cửa trên', price: '250.000 đ', category: 'Máy giặt' },
+    {
+      id: 1,
+      name: 'Bảo dưỡng, vệ sinh điều hòa treo tường (Dưới 2.5 HP)',
+      category: 'Điều hòa',
+      oldPrice: '200.000 đ',
+      price: '150.000 đ',
+      duration: '45 phút',
+      warranty: '60 ngày',
+      tag: 'Giảm 25%',
+      completedCount: '14.8k đã phục vụ',
+      rating: '4.95'
+    },
+    {
+      id: 2,
+      name: 'Nạp gas R32 / R410A điều hòa Inverter chính hãng',
+      category: 'Điều hòa',
+      oldPrice: '420.000 đ',
+      price: '350.000 đ',
+      duration: '60 phút',
+      warranty: '6 tháng',
+      tag: 'Khuyên dùng',
+      completedCount: '9.2k đã phục vụ',
+      rating: '4.92'
+    },
+    {
+      id: 3,
+      name: 'Vệ sinh tháo lồng giặt diệt khuẩn (Cửa trên / Cửa ngang)',
+      category: 'Máy giặt',
+      oldPrice: '320.000 đ',
+      price: '250.000 đ',
+      duration: '90 phút',
+      warranty: '30 ngày',
+      tag: 'Bán chạy',
+      completedCount: '11.5k đã phục vụ',
+      rating: '4.98'
+    },
+    {
+      id: 4,
+      name: 'Kiểm tra & sửa tủ lạnh không mát, xì gas, kêu to',
+      category: 'Tủ lạnh',
+      oldPrice: '250.000 đ',
+      price: '200.000 đ',
+      duration: '60 phút',
+      warranty: '60 ngày',
+      tag: 'Bao giá tốt',
+      completedCount: '6.4k đã phục vụ',
+      rating: '4.90'
+    },
   ];
+
+  const handleOpenBook = (svc) => {
+    setSelectedService(svc);
+    setShowQuickBook(true);
+    setBookingSuccess(false);
+  };
+
+  const handleConfirmBooking = (e) => {
+    e.preventDefault();
+    setBookingSuccess(true);
+    setTimeout(() => {
+      setShowQuickBook(false);
+      navigate('/my-requests');
+    }, 1800);
+  };
 
   return (
-    <div style={{ paddingBottom: '20px' }}>
-      {/* Banner chào mừng */}
-      <div style={{
-        background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))',
-        color: 'white',
-        padding: '20px 16px 24px',
-        borderBottomLeftRadius: '24px',
-        borderBottomRightRadius: '24px',
-        boxShadow: 'var(--shadow-md)'
-      }}>
-        <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Xin chào bạn,</div>
-        <div style={{ fontSize: '1.25rem', fontWeight: 700, marginTop: '2px' }}>
-          {user?.full_name || 'Khách hàng Minh Đức'}
-        </div>
-        <p style={{ fontSize: '0.82rem', marginTop: '6px', opacity: 0.85 }}>
-          Bạn cần hỗ trợ sửa chữa hoặc bảo trì thiết bị gì hôm nay?
-        </p>
+    <div>
+      {/* =========================================================================
+          1. HERO BANNER
+         ========================================================================= */}
+      <section className="dmx-hero-banner">
+        <div className="dmx-hero-container">
+          {/* Cột trái */}
+          <div>
+            <div className="dmx-hero-badge">
+              Phục vụ tận nhà • Có mặt sau 60 phút
+            </div>
+            <h1 className="dmx-hero-title">
+              Dịch Vụ Sửa Chữa & Bảo Trì Thiết Bị Tại Nhà
+            </h1>
+            <p className="dmx-hero-subtitle">
+              Đội ngũ kỹ thuật viên tay nghề cao được đào tạo bài bản, trang thiết bị hiện đại. Báo giá niêm yết minh bạch, linh kiện chính hãng, bảo hành chu đáo 60 ngày.
+            </p>
 
-        {/* Nút đặt lịch to nổi bật */}
-        <button
-          onClick={() => navigate('/create-request')}
-          style={{
+            <div className="dmx-hero-buttons" style={{ display: 'flex', gap: '14px', marginTop: '24px', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => navigate('/create-request')}
+                className="btn btn-dmx-yellow btn-lg"
+              >
+                <span>ĐẶT LỊCH NGAY TRONG 30S</span>
+                <ArrowRight size={20} />
+              </button>
+
+              <button
+                onClick={() => navigate('/services')}
+                className="btn btn-secondary btn-lg"
+                style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#FFFFFF', borderColor: 'rgba(255, 255, 255, 0.3)' }}
+              >
+                <span>Xem Bảng Giá Niêm Yết</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Cột phải: Form Đặt Lịch Nhanh 30s */}
+          <div className="dmx-quick-book-card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#E11B1E', animation: 'pulse 1.5s infinite' }} />
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--dmx-blue-dark)' }}>
+                ĐẶT LỊCH SỬA CHỮA NHANH
+              </h3>
+            </div>
+            <p style={{ fontSize: '0.82rem', color: 'var(--slate-500)', marginBottom: '16px' }}>
+              Điền thông tin để kỹ thuật viên gần nhất liên hệ phục vụ bạn sau 5 phút:
+            </p>
+
+            <form onSubmit={(e) => { e.preventDefault(); navigate('/create-request'); }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label className="form-label">Chọn thiết bị cần hỗ trợ:</label>
+                <select className="form-control" defaultValue="AC">
+                  <option value="AC">Điều hòa / Máy lạnh (Vệ sinh, sửa không mát)</option>
+                  <option value="FRIDGE">Tủ lạnh (Không đông đá, xì gas)</option>
+                  <option value="WASH">Máy giặt (Vệ sinh lồng, vắt rung lắc)</option>
+                  <option value="HEATER">Bình nóng lạnh (Không nóng, rò điện)</option>
+                  <option value="ELEC">Điện nước gia dụng (Chập điện, nhảy aptomat)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="form-label">Số điện thoại nhận thợ:</label>
+                <input
+                  type="tel"
+                  placeholder="Ví dụ: 0987654321"
+                  defaultValue={user?.phone || '0987654321'}
+                  className="form-control"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Khu vực / Địa chỉ của bạn:</label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Cầu Giấy, Hà Nội"
+                  defaultValue="Quận Cầu Giấy, Hà Nội"
+                  className="form-control"
+                  required
+                />
+              </div>
+
+              <button type="submit" className="btn btn-dmx-yellow" style={{ width: '100%', padding: '14px', marginTop: '6px' }}>
+                <strong>YÊU CẦU LIÊN HỆ LẠI NGAY</strong>
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          2. 4 CAM KẾT VÀNG
+         ========================================================================= */}
+      <div className="dmx-commitments-grid">
+        <div className="dmx-commitment-card">
+          <div className="dmx-commitment-icon">
+            <Clock size={24} />
+          </div>
+          <div>
+            <div className="dmx-commitment-title">Đúng hẹn 60 phút</div>
+            <div className="dmx-commitment-desc">Kỹ thuật viên có mặt ngay trong 1 giờ hoặc theo lịch hẹn chính xác.</div>
+          </div>
+        </div>
+
+        <div className="dmx-commitment-card">
+          <div className="dmx-commitment-icon" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
+            <Award size={24} />
+          </div>
+          <div>
+            <div className="dmx-commitment-title">Minh bạch chi phí</div>
+            <div className="dmx-commitment-desc">Báo giá niêm yết trước khi làm. Cam kết không phát sinh chi phí ẩn.</div>
+          </div>
+        </div>
+
+        <div className="dmx-commitment-card">
+          <div className="dmx-commitment-icon" style={{ backgroundColor: '#ECFDF5', color: '#059669' }}>
+            <ShieldCheck size={24} />
+          </div>
+          <div>
+            <div className="dmx-commitment-title">Bảo hành 60 ngày</div>
+            <div className="dmx-commitment-desc">Bảo hành linh kiện & dịch vụ chu đáo. Lỗi cũ làm lại miễn phí 100%.</div>
+          </div>
+        </div>
+
+        <div className="dmx-commitment-card">
+          <div className="dmx-commitment-icon" style={{ backgroundColor: '#F3E8FF', color: '#7C3AED' }}>
+            <UserCheck size={24} />
+          </div>
+          <div>
+            <div className="dmx-commitment-title">Thợ chuẩn tay nghề</div>
+            <div className="dmx-commitment-desc">Kỹ thuật viên có đồng phục, đeo thẻ, lịch sự và dọn dẹp sạch sẽ.</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="dmx-section-container">
+        {/* =========================================================================
+            3. THẺ THEO DÕI ĐƠN HÀNG THỜI GIAN THỰC (LIVE TRACKER)
+           ========================================================================= */}
+        <div className="dmx-live-tracker">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className="badge badge-dmx-yellow">ĐANG XỬ LÝ</span>
+              <strong style={{ fontSize: '1.05rem', color: '#FFFFFF' }}>Mã đơn: #REQ-1003</strong>
+              <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>• Hôm nay: 09:30</span>
+            </div>
+            <button
+              onClick={() => navigate('/my-requests')}
+              className="btn btn-sm"
+              style={{ background: 'rgba(255,255,255,0.15)', color: '#FFFFFF', border: 'none' }}
+            >
+              <span>Xem chi tiết hành trình</span>
+              <ArrowRight size={14} />
+            </button>
+          </div>
+
+          <div style={{ fontSize: '0.92rem', fontWeight: 600, marginTop: '8px', color: '#BAE6FD' }}>
+            Sửa máy giặt Electrolux cửa ngang 9kg (Rung lắc mạnh, kêu to)
+          </div>
+
+          {/* Timeline 4 bước */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '8px',
             marginTop: '16px',
-            background: 'var(--accent)',
-            color: '#1E293B',
-            fontWeight: 700,
-            fontSize: '0.95rem',
-            border: 'none',
+            paddingTop: '16px',
+            borderTop: '1px solid rgba(255,255,255,0.15)',
+            textAlign: 'center'
+          }}>
+            <div>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#10B981', color: '#FFFFFF', margin: '0 auto 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Check size={16} />
+              </div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700 }}>Đã tiếp nhận</div>
+            </div>
+
+            <div>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#10B981', color: '#FFFFFF', margin: '0 auto 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Check size={16} />
+              </div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700 }}>Đã phân công</div>
+            </div>
+
+            <div>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#FED700', color: '#0F172A', margin: '0 auto 6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                3
+              </div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#FED700' }}>KTV đang đến nơi</div>
+            </div>
+
+            <div>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', color: '#FFFFFF', margin: '0 auto 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                4
+              </div>
+              <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>Nghiệm thu</div>
+            </div>
+          </div>
+
+          {/* Thông tin thợ phụ trách */}
+          <div style={{
+            marginTop: '14px',
+            background: 'rgba(255,255,255,0.08)',
             borderRadius: 'var(--radius-md)',
-            padding: '12px 18px',
+            padding: '10px 14px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            width: '100%',
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(255, 159, 28, 0.4)'
-          }}
-        >
-          <span>Đặt lịch sửa chữa ngay</span>
-          <ArrowRight size={20} />
-        </button>
-      </div>
-
-      {/* Đơn hàng đang diễn ra (Active Request Card) */}
-      <div className="card" style={{ marginTop: '-14px', border: '1.5px solid #BAE6FD', background: '#F0F9FF' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369A1' }}>ĐƠN ĐANG XỬ LÝ</span>
-          <span className="badge badge-warning">KTV ĐANG ĐẾN</span>
-        </div>
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', marginTop: '6px' }}>
-          Mã đơn: #REQ-2026-081
-        </div>
-        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-          Bảo dưỡng điều hòa Daikin Inverter 12000BTU
-        </div>
-
-        {/* Kỹ thuật viên snapshot */}
-        <div style={{
-          marginTop: '10px',
-          padding: '10px',
-          background: 'white',
-          borderRadius: 'var(--radius-sm)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px'
-        }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            background: 'var(--primary)',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 700,
-            fontSize: '0.85rem'
+            flexWrap: 'wrap',
+            gap: '10px'
           }}>
-            T
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#0071AF', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+                TN
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>Trần Văn Nam (Kỹ thuật viên chính Minh Đức)</div>
+                <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Xe máy: 29E1-889.92 • Đánh giá: 4.95/5.0</div>
+              </div>
+            </div>
+
+            <a
+              href="tel:0934567890"
+              className="btn btn-dmx-yellow btn-sm"
+              style={{ textDecoration: 'none' }}
+            >
+              <PhoneCall size={14} />
+              <span>Gọi Kỹ Thuật Viên</span>
+            </a>
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>KTV. Trần Văn Tuấn</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Lịch hẹn: 14:30 - Hôm nay</div>
-          </div>
-          <a
-            href="tel:0912345678"
-            style={{
-              background: '#DCFCE7',
-              color: '#15803D',
-              border: 'none',
-              padding: '6px 10px',
-              borderRadius: 'var(--radius-full)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              textDecoration: 'none'
-            }}
-          >
-            <PhoneCall size={14} /> Gọi thợ
-          </a>
         </div>
 
-        <button
-          onClick={() => navigate('/my-requests')}
-          style={{
-            marginTop: '10px',
-            background: 'none',
-            border: 'none',
-            color: 'var(--primary)',
-            fontSize: '0.82rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            padding: 0
-          }}
-        >
-          Xem chi tiết tiến độ đơn hàng →
-        </button>
-      </div>
+        {/* =========================================================================
+            4. DANH MỤC THIẾT BỊ SỬA CHỮA (CATEGORIES GRID - SẠCH SẼ, KHÔNG DÙNG ICON EMOJI)
+           ========================================================================= */}
+        <div className="dmx-section-header">
+          <div>
+            <h2 className="dmx-section-title">
+              <Wrench size={22} color="var(--dmx-blue)" />
+              <span>Danh Mục Thiết Bị Cần Sửa Chữa & Bảo Trì</span>
+            </h2>
+            <p style={{ fontSize: '0.82rem', color: 'var(--slate-500)', marginTop: '2px' }}>
+              Chọn thiết bị của bạn để xem bảng giá dịch vụ và đặt lịch phục vụ tận nhà
+            </p>
+          </div>
 
-      {/* Danh mục dịch vụ */}
-      <div style={{ padding: '0 16px', marginTop: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 700 }}>Danh mục dịch vụ</h2>
-          <button
-            onClick={() => navigate('/services')}
-            style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}
-          >
-            Tất cả
+          <button onClick={() => navigate('/services')} className="btn btn-secondary btn-sm">
+            <span>Xem tất cả dịch vụ</span>
+            <ArrowRight size={14} />
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-          {categories.map((cat) => {
-            const Icon = cat.icon;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => navigate('/create-request', { state: { categoryId: cat.id } })}
-                style={{
-                  background: 'white',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '12px 8px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  textAlign: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  transition: 'transform 0.15s'
-                }}
-              >
-                <div style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: 'var(--radius-md)',
-                  background: cat.bg,
-                  color: cat.color,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Icon size={24} />
-                </div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2 }}>
-                  {cat.name}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Dịch vụ phổ biến */}
-      <div style={{ padding: '0 16px', marginTop: '24px' }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '12px' }}>Dịch vụ nổi bật</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {popularServices.map((srv) => (
+        <div className="dmx-categories-grid">
+          {categories.map(cat => (
             <div
-              key={srv.id}
-              style={{
-                background: 'white',
-                borderRadius: 'var(--radius-md)',
-                padding: '12px 14px',
-                border: '1px solid var(--border)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}
+              key={cat.id}
+              className="dmx-category-card"
+              onClick={() => navigate('/services')}
+              style={{ padding: '24px 16px' }}
             >
-              <div>
-                <span className="badge badge-primary" style={{ fontSize: '0.68rem', marginBottom: '4px' }}>
-                  {srv.category}
-                </span>
-                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-main)', marginTop: '2px' }}>
-                  {srv.name}
-                </div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)', marginTop: '4px' }}>
-                  Giá từ: {srv.price}
-                </div>
-              </div>
-              <button
-                onClick={() => navigate('/create-request', { state: { serviceName: srv.name } })}
-                className="btn-secondary"
-                style={{ padding: '6px 12px', fontSize: '0.8rem', flexShrink: 0 }}
-              >
-                Đặt lịch
-              </button>
+              <div style={{
+                width: '42px',
+                height: '4px',
+                borderRadius: 'var(--radius-full)',
+                backgroundColor: cat.color,
+                marginBottom: '14px'
+              }} />
+              <div className="dmx-category-name" style={{ fontSize: '1rem' }}>{cat.name}</div>
+              <div className="dmx-category-price" style={{ marginTop: '6px' }}>{cat.priceFrom}</div>
+              <span className="badge" style={{ backgroundColor: cat.bg, color: cat.color, marginTop: '12px', fontSize: '0.72rem' }}>
+                {cat.badge}
+              </span>
             </div>
           ))}
         </div>
+
+        {/* =========================================================================
+            5. BẢNG GIÁ DỊCH VỤ NỔI BẬT
+           ========================================================================= */}
+        <div className="dmx-section-header" style={{ marginTop: '40px' }}>
+          <div>
+            <h2 className="dmx-section-title">
+              <Sparkles size={22} color="#D97706" />
+              <span>Dịch Vụ Được Đặt Nhiều Nhất Tuần Này</span>
+            </h2>
+            <p style={{ fontSize: '0.82rem', color: 'var(--slate-500)', marginTop: '2px' }}>
+              Giá niêm yết rõ ràng, phục vụ đúng hẹn, bảo hành chu đáo lên đến 60 ngày
+            </p>
+          </div>
+        </div>
+
+        <div className="dmx-services-grid">
+          {popularServices.map(svc => (
+            <div key={svc.id} className="dmx-service-card">
+              <div style={{ padding: '12px 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="badge badge-dmx-sale">{svc.tag}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--slate-500)' }}>
+                  Đánh giá: <strong>{svc.rating}/5.0</strong> ({svc.completedCount})
+                </span>
+              </div>
+
+              <div className="dmx-service-body">
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--dmx-blue)' }}>
+                  {svc.category}
+                </div>
+                <h3 className="dmx-service-name">
+                  {svc.name}
+                </h3>
+
+                <div className="dmx-service-meta">
+                  <span>Thời gian: {svc.duration}</span>
+                  <span>•</span>
+                  <span>Bảo hành: {svc.warranty}</span>
+                </div>
+
+                <div className="dmx-service-price-row">
+                  <div>
+                    <span className="dmx-price-val">{svc.price}</span>
+                    <span className="dmx-old-price">{svc.oldPrice}</span>
+                  </div>
+
+                  <button
+                    onClick={() => handleOpenBook(svc)}
+                    className="btn btn-dmx-yellow btn-sm"
+                  >
+                    <span>ĐẶT LỊCH</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* =========================================================================
+            6. QUY TRÌNH PHỤC VỤ 4 BƯỚC
+           ========================================================================= */}
+        <div style={{
+          marginTop: '48px',
+          background: '#FFFFFF',
+          borderRadius: 'var(--radius-xl)',
+          padding: '32px 24px',
+          border: '1px solid var(--slate-200)',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--dmx-blue-dark)' }}>
+              Quy Trình Phục Vụ 4 Bước Tiêu Chuẩn HRMSS
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--slate-500)', marginTop: '4px' }}>
+              Nhanh chóng, chuyên nghiệp và an tâm tuyệt đối cho mọi gia đình
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+            <div style={{ textAlign: 'center', padding: '12px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--dmx-blue-light)', color: 'var(--dmx-blue)', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem' }}>
+                1
+              </div>
+              <h4 style={{ fontWeight: 700, fontSize: '0.95rem' }}>Đặt Lịch Trực Tuyến</h4>
+              <p style={{ fontSize: '0.78rem', color: 'var(--slate-500)', marginTop: '4px' }}>
+                Chỉ mất 30 giây chọn thiết bị và thời gian bạn muốn thợ có mặt.
+              </p>
+            </div>
+
+            <div style={{ textAlign: 'center', padding: '12px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#FEF3C7', color: '#D97706', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem' }}>
+                2
+              </div>
+              <h4 style={{ fontWeight: 700, fontSize: '0.95rem' }}>Xác Nhận & Đến Nhà</h4>
+              <p style={{ fontSize: '0.78rem', color: 'var(--slate-500)', marginTop: '4px' }}>
+                Kỹ thuật viên gần nhất nhận đơn, gọi xác nhận và đến nhà đúng giờ hẹn.
+              </p>
+            </div>
+
+            <div style={{ textAlign: 'center', padding: '12px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#ECFDF5', color: '#059669', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem' }}>
+                3
+              </div>
+              <h4 style={{ fontWeight: 700, fontSize: '0.95rem' }}>Kiểm Tra & Sửa Chữa</h4>
+              <p style={{ fontSize: '0.78rem', color: 'var(--slate-500)', marginTop: '4px' }}>
+                Báo đúng lỗi, đúng giá niêm yết. Tiến hành thi công cẩn thận, sạch sẽ.
+              </p>
+            </div>
+
+            <div style={{ textAlign: 'center', padding: '12px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--dmx-blue)', color: '#FED700', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem' }}>
+                4
+              </div>
+              <h4 style={{ fontWeight: 700, fontSize: '0.95rem' }}>Nghiệm Thu & Bảo Hành</h4>
+              <p style={{ fontSize: '0.78rem', color: 'var(--slate-500)', marginTop: '4px' }}>
+                Khách kiểm tra ưng ý mới thanh toán. Kích hoạt bảo hành điện tử 60 ngày.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* =========================================================================
+            7. ĐÁNH GIÁ THỰC TẾ TỪ KHÁCH HÀNG
+           ========================================================================= */}
+        <div style={{ marginTop: '40px' }}>
+          <div className="dmx-section-header">
+            <div>
+              <h2 className="dmx-section-title">
+                <span>Ý Kiến Đánh Giá Của Khách Hàng</span>
+              </h2>
+              <p style={{ fontSize: '0.82rem', color: 'var(--slate-500)', marginTop: '2px' }}>
+                Hơn 98.6% khách hàng hài lòng và đánh giá cao chất lượng phục vụ
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            <div className="card-modern" style={{ padding: '18px' }}>
+              <div style={{ fontWeight: 700, color: '#D97706', marginBottom: '8px', fontSize: '0.85rem' }}>
+                Đánh giá: 5/5 sao
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--slate-700)', lineHeight: 1.5, fontStyle: 'italic' }}>
+                "Kỹ thuật viên đến rất đúng giờ, mặc đồng phục lịch sự. Vệ sinh điều hòa xong có bọc bạt cẩn thận không để văng giọt nước nào ra sàn. Sẽ tiếp tục ủng hộ!"
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#0071AF', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
+                  H
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Anh Hoàng Minh</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--slate-500)' }}>Chung cư Season Avenue, Hà Đông</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card-modern" style={{ padding: '18px' }}>
+              <div style={{ fontWeight: 700, color: '#D97706', marginBottom: '8px', fontSize: '0.85rem' }}>
+                Đánh giá: 5/5 sao
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--slate-700)', lineHeight: 1.5, fontStyle: 'italic' }}>
+                "Máy giặt nhà mình bị kêu to. Bạn Nam kỹ thuật viên đến tháo ra kiểm tra rất kỹ, thay thụt giảm xóc xong chạy êm ru. Báo giá niêm yết rõ ràng."
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#D97706', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
+                  L
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Chị Phương Lan</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--slate-500)' }}>Phố Trần Thái Tông, Cầu Giấy</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card-modern" style={{ padding: '18px' }}>
+              <div style={{ fontWeight: 700, color: '#D97706', marginBottom: '8px', fontSize: '0.85rem' }}>
+                Đánh giá: 5/5 sao
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--slate-700)', lineHeight: 1.5, fontStyle: 'italic' }}>
+                "Đặt lịch trên web cực kỳ nhanh, có tin nhắn xác nhận mã đơn ngay. Bảo hành điện tử tra cứu tiện lợi, không lo mất phiếu giấy như trước."
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#059669', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem' }}>
+                  T
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Bác Tuấn Anh</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--slate-500)' }}>Nguyễn Chí Thanh, Đống Đa</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Cam kết chất lượng Minh Đức */}
-      <div className="card" style={{ background: '#F8FAFC', border: '1px dashed var(--border)', marginTop: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-dark)', fontWeight: 700 }}>
-          <ShieldCheck size={20} color="var(--primary)" />
-          <span>Cam kết từ Cơ Điện Lạnh Minh Đức</span>
+      {/* =========================================================================
+          8. QUICK BOOKING MODAL
+         ========================================================================= */}
+      {showQuickBook && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '480px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--dmx-blue-dark)' }}>
+                Đặt Lịch: {selectedService?.category}
+              </h3>
+              <button onClick={() => setShowQuickBook(false)} className="btn-ghost" style={{ padding: '4px' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {bookingSuccess ? (
+              <div style={{ textAlign: 'center', padding: '24px 10px' }}>
+                <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#DCFCE7', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                  <CheckCircle2 size={32} />
+                </div>
+                <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--slate-900)' }}>
+                  Đặt Lịch Thành Công!
+                </h4>
+                <p style={{ fontSize: '0.85rem', color: 'var(--slate-600)', marginTop: '4px' }}>
+                  Mã đơn <strong>#REQ-2026-{(Math.floor(100 + Math.random() * 900))}</strong> đã được gửi tới kỹ thuật viên gần nhất. Đang chuyển bạn tới trang theo dõi đơn hàng...
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleConfirmBooking}>
+                <div style={{ background: 'var(--dmx-blue-light)', padding: '12px', borderRadius: 'var(--radius-md)', marginBottom: '14px' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--dmx-blue-dark)' }}>
+                    {selectedService?.name}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--slate-600)' }}>Đơn giá niêm yết:</span>
+                    <strong style={{ fontSize: '1.1rem', color: 'var(--dmx-red)' }}>{selectedService?.price}</strong>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Thời gian bạn muốn thợ đến *</label>
+                  <select
+                    value={bookingTime}
+                    onChange={e => setBookingTime(e.target.value)}
+                    className="form-control"
+                  >
+                    <option value="Sớm nhất (Trong 60 phút)">Càng sớm càng tốt (Trong 60 phút)</option>
+                    <option value="Hôm nay: 14:00 - 16:00">Hôm nay: Chiều (14:00 - 16:00)</option>
+                    <option value="Hôm nay: 16:30 - 18:30">Hôm nay: Cuối ngày (16:30 - 18:30)</option>
+                    <option value="Sáng mai: 08:30 - 10:30">Sáng mai: (08:30 - 10:30)</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Số điện thoại liên hệ *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={bookingPhone}
+                    onChange={e => setBookingPhone(e.target.value)}
+                    className="form-control"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Địa chỉ phục vụ tại nhà *</label>
+                  <input
+                    type="text"
+                    required
+                    value={bookingAddress}
+                    onChange={e => setBookingAddress(e.target.value)}
+                    className="form-control"
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                  <button type="button" onClick={() => setShowQuickBook(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+                    Hủy
+                  </button>
+                  <button type="submit" className="btn btn-dmx-yellow" style={{ flex: 2, padding: '12px' }}>
+                    <strong>XÁC NHẬN ĐẶT LỊCH</strong>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
-        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px', lineHeight: 1.4 }}>
-          ✓ Báo giá minh bạch trước khi sửa chữa.<br />
-          ✓ 100% linh kiện chính hãng kèm tem bảo hành.<br />
-          ✓ Kỹ thuật viên có chuyên môn, trang phục quy chuẩn.
-        </p>
-      </div>
+      )}
     </div>
   );
 }

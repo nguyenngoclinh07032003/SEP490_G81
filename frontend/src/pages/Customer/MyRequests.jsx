@@ -101,7 +101,7 @@ export default function MyRequests() {
   });
 
   return (
-    <div style={{ padding: '14px 16px' }}>
+    <div style={{ maxWidth: '960px', margin: '20px auto', padding: '0 16px' }}>
       {/* Filter Tabs */}
       <div style={{
         display: 'flex',
