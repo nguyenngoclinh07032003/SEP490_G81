@@ -6,4 +6,5 @@ dist/
 .claude/
 database/.mysql-local/
 database/Database/*.pgerd
+.agents/
 
