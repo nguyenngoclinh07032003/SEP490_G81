@@ -7,6 +7,7 @@ const router = Router();
 // 1. Tuyến đường công khai (Public routes - KHÔNG dùng verifyToken)
 router.post('/register', authController.register);
 router.post('/login', authController.login);
+router.post('/refresh-token', authController.refreshToken);
 
 // 2. Tuyến đường yêu cầu xác thực (Protected routes - BẮT BUỘC có token hợp lệ)
 router.post('/logout', verifyToken, authController.logout);

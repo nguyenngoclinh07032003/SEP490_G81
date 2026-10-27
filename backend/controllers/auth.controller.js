@@ -7,6 +7,38 @@ import redisClient from '../config/redis.js';
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_SECONDS = 900; // 15 phút
 
+const JWT_SECRET = process.env.JWT_SECRET || 'HRMSS_DEFAULT_SECRET_2026';
+const JWT_ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN || '15m';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'HRMSS_DEFAULT_REFRESH_SECRET_2026';
+const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+const REFRESH_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 ngày
+const ACCESS_TOKEN_TTL_SECONDS = 15 * 60; // 15 phút (900 giây)
+
+/**
+ * Hàm phụ trợ: Ký cặp Access Token (15 phút) và Refresh Token (7 ngày)
+ */
+export const generateTokens = (user) => {
+  const tokenPayload = {
+    userId: user.user_id || user.userId,
+    username: user.username,
+    email: user.email,
+    roleId: user.role_id || user.roleId,
+    roleCode: user.role_code || user.role,
+  };
+
+  const accessToken = jwt.sign(tokenPayload, JWT_SECRET, {
+    expiresIn: JWT_ACCESS_EXPIRES_IN,
+  });
+
+  const refreshToken = jwt.sign(
+    { userId: tokenPayload.userId, username: tokenPayload.username },
+    JWT_REFRESH_SECRET,
+    { expiresIn: JWT_REFRESH_EXPIRES_IN },
+  );
+
+  return { accessToken, refreshToken, tokenPayload };
+};
+
 /**
  * [POST] /api/auth/register - Đăng ký tài khoản mới
  */
@@ -217,26 +249,28 @@ export const login = async (req, res) => {
       // bỏ qua nếu lỗi redis
     }
 
-    // 6. Ký Access Token (JWT)
-    const tokenPayload = {
-      userId: user.user_id,
-      username: user.username,
-      email: user.email,
-      roleId: user.role_id,
-      roleCode: user.role_code,
-    };
+    // 6. Ký cặp Token bảo mật (Access Token 15m & Refresh Token 7d)
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user);
 
-    const token = jwt.sign(
-      tokenPayload,
-      process.env.JWT_SECRET || 'HRMSS_DEFAULT_SECRET_2026',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '1d' },
-    );
+    // Lưu Refresh Token vào Redis để quản lý phiên và thu hồi
+    try {
+      await redisClient.set(
+        `refresh:${user.user_id}:${newRefreshToken}`,
+        'active',
+        { EX: REFRESH_TTL_SECONDS },
+      );
+    } catch (e) {
+      console.warn('⚠️ [Redis] Không thể lưu refresh token:', e.message);
+    }
 
     return res.status(200).json({
       success: true,
       message: 'Đăng nhập thành công!',
       data: {
-        token,
+        token: accessToken, // Giữ token để tương thích ngược 100% với frontend cũ
+        accessToken,
+        refreshToken: newRefreshToken,
+        expiresIn: ACCESS_TOKEN_TTL_SECONDS,
         user: {
           userId: user.user_id,
           username: user.username,
@@ -260,24 +294,140 @@ export const login = async (req, res) => {
 };
 
 /**
+ * [POST] /api/auth/refresh-token - Cấp mới Access Token (15 phút) & Đưa Token cũ vào Blacklist
+ */
+export const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken: incomingRefreshToken, oldAccessToken } = req.body || {};
+    const authHeader = req.headers.authorization;
+    const tokenToBlacklist = oldAccessToken || (authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null);
+
+    if (!incomingRefreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng cung cấp Refresh Token.',
+      });
+    }
+
+    // 1. Xác thực chữ ký Refresh Token
+    let decodedRefresh;
+    try {
+      decodedRefresh = jwt.verify(incomingRefreshToken, JWT_REFRESH_SECRET);
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.',
+      });
+    }
+
+    const userId = decodedRefresh.userId;
+
+    // 2. Kiểm tra Refresh Token trong Redis (nếu Redis hoạt động)
+    try {
+      const isValid = await redisClient.get(`refresh:${userId}:${incomingRefreshToken}`);
+      if (isValid === null) {
+        return res.status(401).json({
+          success: false,
+          message: 'Phiên làm việc đã bị thu hồi hoặc hết hạn. Vui lòng đăng nhập lại.',
+        });
+      }
+    } catch (redisErr) {
+      console.warn('⚠️ [Redis] Bỏ qua kiểm tra refresh token:', redisErr.message);
+    }
+
+    // 3. Đưa Access Token cũ vào Redis Blacklist ngay lập tức (Chống Replay Attack)
+    if (tokenToBlacklist) {
+      try {
+        const decodedAccess = jwt.decode(tokenToBlacklist);
+        const remainingTime = decodedAccess?.exp
+          ? Math.max(decodedAccess.exp - Math.floor(Date.now() / 1000), 0)
+          : ACCESS_TOKEN_TTL_SECONDS;
+
+        const ttl = remainingTime > 0 ? remainingTime : ACCESS_TOKEN_TTL_SECONDS;
+        await redisClient.set(`blacklist:${tokenToBlacklist}`, 'revoked', { EX: ttl });
+      } catch (err) {
+        console.warn('⚠️ [Redis] Không thể đưa old access token vào blacklist:', err.message);
+      }
+    }
+
+    // 4. Lấy thông tin user mới nhất từ database
+    const userRes = await pool.query(
+      `SELECT u.user_id, u.role_id, u.username, u.email, u.account_status,
+              r.role_code, r.role_name
+       FROM user_account u
+       JOIN role r ON u.role_id = r.role_id
+       WHERE u.user_id = $1
+       LIMIT 1`,
+      [userId],
+    );
+
+    if (userRes.rows.length === 0 || userRes.rows[0].account_status !== 'ACTIVE') {
+      return res.status(403).json({
+        success: false,
+        message: 'Tài khoản không tồn tại hoặc đã bị khóa.',
+      });
+    }
+
+    const user = userRes.rows[0];
+
+    // 5. Token Rotation: Xóa Refresh Token cũ, sinh cặp Token mới
+    try {
+      await redisClient.del(`refresh:${userId}:${incomingRefreshToken}`);
+    } catch (e) {
+      // Bỏ qua lỗi xóa redis
+    }
+
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } = generateTokens(user);
+
+    try {
+      await redisClient.set(
+        `refresh:${userId}:${newRefreshToken}`,
+        'active',
+        { EX: REFRESH_TTL_SECONDS },
+      );
+    } catch (e) {
+      // Bỏ qua lỗi lưu redis
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Làm mới phiên đăng nhập thành công!',
+      data: {
+        token: newAccessToken,
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+        expiresIn: ACCESS_TOKEN_TTL_SECONDS,
+      },
+    });
+  } catch (error) {
+    console.error('Lỗi làm mới token:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi máy chủ khi làm mới token.',
+      error: error.message,
+    });
+  }
+};
+
+/**
  * [POST] /api/auth/logout - Đăng xuất (Vô hiệu hóa Token bằng Redis Blacklist)
  */
 export const logout = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(200).json({ success: true, message: 'Đăng xuất thành công.' });
-    }
+    const { refreshToken: incomingRefreshToken } = req.body || {};
 
-    const token = authHeader.split(' ')[1];
-
-    // Giải mã token để tính thời gian sống còn lại
-    const decoded = jwt.decode(token);
-    if (decoded?.exp) {
-      const remainingTime = decoded.exp - Math.floor(Date.now() / 1000);
-      if (remainingTime > 0) {
-        // Lưu token vào Redis Blacklist kèm TTL tự hủy bằng đúng remainingTime
-        await redisClient.set(`blacklist:${token}`, 'revoked', { EX: remainingTime });
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.decode(token);
+      if (decoded?.exp) {
+        const remainingTime = decoded.exp - Math.floor(Date.now() / 1000);
+        if (remainingTime > 0) {
+          await redisClient.set(`blacklist:${token}`, 'revoked', { EX: remainingTime });
+        }
+      }
+      if (decoded?.userId && incomingRefreshToken) {
+        await redisClient.del(`refresh:${decoded.userId}:${incomingRefreshToken}`);
       }
     }
 

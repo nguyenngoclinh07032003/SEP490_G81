@@ -155,6 +155,7 @@ export function AuthProvider({ children }) {
     setToken(null);
     localStorage.removeItem('hrmss_user');
     localStorage.removeItem('hrmss_token');
+    localStorage.removeItem('hrmss_refresh_token');
   };
 
   // Kiểm tra quyền (RBAC)

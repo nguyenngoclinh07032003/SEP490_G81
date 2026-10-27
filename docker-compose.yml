@@ -47,7 +47,22 @@ services:
       - postgres
       - redis
 
+  # 4. Dịch vụ FRONTEND (React SPA phục vụ bởi Nginx Production)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5000
+    container_name: hrmss-frontend
+    restart: always
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
 volumes:
   redisdata:
   pgdata:
+
 

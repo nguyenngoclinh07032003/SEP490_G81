@@ -22,7 +22,12 @@ export async function loginApi(credentials) {
     password: credentials.password,
   };
 
-  return await apiClient.post('/api/auth/login', payload);
+  const response = await apiClient.post('/api/auth/login', payload);
+  if (response?.success && response?.data) {
+    const { token, accessToken, refreshToken } = response.data;
+    apiClient.setTokens(accessToken || token, refreshToken);
+  }
+  return response;
 }
 
 /**
@@ -44,11 +49,26 @@ export async function registerApi(userData) {
 }
 
 /**
+ * Làm mới Access Token (15 phút) bằng Refresh Token
+ * @returns {Promise<Object>}
+ */
+export async function refreshTokenApi() {
+  const refreshToken = apiClient.getRefreshToken();
+  const oldAccessToken = apiClient.getToken();
+  return await apiClient.post('/api/auth/refresh-token', { refreshToken, oldAccessToken });
+}
+
+/**
  * Đăng xuất hệ thống (Hủy token trên Redis & Backend)
  * @returns {Promise<Object>}
  */
 export async function logoutApi() {
-  return await apiClient.post('/api/auth/logout');
+  const refreshToken = apiClient.getRefreshToken();
+  try {
+    return await apiClient.post('/api/auth/logout', { refreshToken });
+  } finally {
+    apiClient.clearTokens();
+  }
 }
 
 /**
@@ -62,6 +82,7 @@ export async function getMeApi() {
 export const authService = {
   login: loginApi,
   register: registerApi,
+  refreshToken: refreshTokenApi,
   logout: logoutApi,
   getMe: getMeApi,
 };

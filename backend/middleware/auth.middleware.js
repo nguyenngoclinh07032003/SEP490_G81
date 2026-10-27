@@ -39,7 +39,8 @@ export const verifyToken = async (req, res, next) => {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,
-        message: 'Token đã hết hạn. Vui lòng đăng nhập lại.',
+        code: 'TOKEN_EXPIRED',
+        message: 'Token đã hết hạn. Vui lòng làm mới phiên làm việc.',
       });
     }
     return res.status(401).json({
