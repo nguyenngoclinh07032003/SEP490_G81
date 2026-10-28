@@ -1,7 +1,7 @@
-import bcrypt from 'bcrypt';
-import redisClient from '../config/redis.js';
-import tokenService from './token.service.js';
-import { userRepository } from '../repositories/index.js';
+import bcrypt from "bcryptjs";
+import redisClient from "../config/redis.js";
+import tokenService from "./token.service.js";
+import { userRepository } from "../repositories/index.js";
 
 // Cấu hình giới hạn đăng nhập sai theo JOB-01
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -20,7 +20,7 @@ class AuthService {
    * Chuẩn hóa chuỗi identifier (username / email) bằng cách xóa khoảng trắng và chuyển chữ thường
    */
   normalize(str) {
-    if (!str || typeof str !== 'string') return '';
+    if (!str || typeof str !== "string") return "";
     return str.trim().toLowerCase();
   }
 
@@ -34,9 +34,11 @@ class AuthService {
   async login({ username, identifier: rawId, email, password }) {
     const rawIdentifier = email || username || rawId;
     if (!rawIdentifier || !password) {
-      const error = new Error('Vui lòng cung cấp tên đăng nhập/email và mật khẩu.');
+      const error = new Error(
+        "Vui lòng cung cấp tên đăng nhập/email và mật khẩu.",
+      );
       error.status = 400;
-      error.code = 'REQUIRED_FIELDS_MISSING';
+      error.code = "REQUIRED_FIELDS_MISSING";
       throw error;
     }
 
@@ -48,14 +50,16 @@ class AuthService {
       if (isLocked) {
         const ttl = await redisClient.ttl(`lockout:${identifier}`);
         const minutesLeft = Math.ceil(ttl / 60);
-        const error = new Error(`Tài khoản đang bị tạm khóa do nhập sai mật khẩu quá ${MAX_LOGIN_ATTEMPTS} lần. Vui lòng thử lại sau ${minutesLeft} phút.`);
+        const error = new Error(
+          `Tài khoản đang bị tạm khóa do nhập sai mật khẩu quá ${MAX_LOGIN_ATTEMPTS} lần. Vui lòng thử lại sau ${minutesLeft} phút.`,
+        );
         error.status = 429;
-        error.code = 'ACCOUNT_LOCKED';
+        error.code = "ACCOUNT_LOCKED";
         throw error;
       }
     } catch (redisErr) {
       if (redisErr.status === 429) throw redisErr;
-      console.warn('⚠️ [Redis] Bỏ qua kiểm tra lockout:', redisErr.message);
+      console.warn("⚠️ [Redis] Bỏ qua kiểm tra lockout:", redisErr.message);
     }
 
     // 2. Tìm tài khoản trong database thông qua UserRepository
@@ -66,10 +70,15 @@ class AuthService {
       try {
         const attempts = await redisClient.incr(`attempts:${identifier}`);
         if (attempts === 1) {
-          await redisClient.expire(`attempts:${identifier}`, LOCKOUT_DURATION_SECONDS);
+          await redisClient.expire(
+            `attempts:${identifier}`,
+            LOCKOUT_DURATION_SECONDS,
+          );
         }
         if (attempts >= MAX_LOGIN_ATTEMPTS) {
-          await redisClient.set(`lockout:${identifier}`, 'locked', { EX: LOCKOUT_DURATION_SECONDS });
+          await redisClient.set(`lockout:${identifier}`, "locked", {
+            EX: LOCKOUT_DURATION_SECONDS,
+          });
           await redisClient.del(`attempts:${identifier}`);
         }
         return attempts;
@@ -80,17 +89,19 @@ class AuthService {
 
     if (!user) {
       await recordFailedAttempt();
-      const error = new Error('Tên đăng nhập hoặc mật khẩu không chính xác.');
+      const error = new Error("Tên đăng nhập hoặc mật khẩu không chính xác.");
       error.status = 401;
-      error.code = 'INVALID_CREDENTIALS';
+      error.code = "INVALID_CREDENTIALS";
       throw error;
     }
 
     // 3. Kiểm tra trạng thái tài khoản (ACTIVE, INACTIVE, LOCKED)
-    if (user.account_status !== 'ACTIVE') {
-      const error = new Error(`Tài khoản của bạn đang ở trạng thái '${user.account_status}'. Vui lòng liên hệ quản trị viên.`);
+    if (user.account_status !== "ACTIVE") {
+      const error = new Error(
+        `Tài khoản của bạn đang ở trạng thái '${user.account_status}'. Vui lòng liên hệ quản trị viên.`,
+      );
       error.status = 403;
-      error.code = 'ACCOUNT_DISABLED';
+      error.code = "ACCOUNT_DISABLED";
       throw error;
     }
 
@@ -105,7 +116,7 @@ class AuthService {
           : `Đã nhập sai quá ${MAX_LOGIN_ATTEMPTS} lần liên tiếp. Tài khoản bị tạm khóa 15 phút.`,
       );
       error.status = 401;
-      error.code = 'PASSWORD_INCORRECT';
+      error.code = "PASSWORD_INCORRECT";
       throw error;
     }
 
@@ -118,10 +129,13 @@ class AuthService {
     }
 
     // 6. Truy vấn danh sách quyền chi tiết (Permissions) từ RBAC qua UserRepository
-    const permissions = await userRepository.getPermissionsByRoleId(user.role_id);
+    const permissions = await userRepository.getPermissionsByRoleId(
+      user.role_id,
+    );
 
     // 7. Cấp cặp Token bảo mật (Access Token 15m + Opaque Hashed Refresh Token 7d)
-    const { accessToken, refreshToken, expiresIn } = tokenService.generateTokens(user);
+    const { accessToken, refreshToken, expiresIn } =
+      tokenService.generateTokens(user);
 
     // Lưu session vào Redis
     await tokenService.saveSession(user.user_id, refreshToken);
@@ -155,9 +169,11 @@ class AuthService {
   async register({ username, password, fullName, full_name, phone, email }) {
     const rawFullName = fullName || full_name;
     if (!username || !password || !rawFullName || !phone) {
-      const error = new Error('Vui lòng cung cấp đầy đủ: Tên đăng nhập, Mật khẩu, Họ tên và Số điện thoại.');
+      const error = new Error(
+        "Vui lòng cung cấp đầy đủ: Tên đăng nhập, Mật khẩu, Họ tên và Số điện thoại.",
+      );
       error.status = 400;
-      error.code = 'REQUIRED_FIELDS_MISSING';
+      error.code = "REQUIRED_FIELDS_MISSING";
       throw error;
     }
 
@@ -165,43 +181,50 @@ class AuthService {
     const cleanEmail = email ? this.normalize(email) : null;
 
     // Kiểm tra ràng buộc: Username không được chứa dấu @
-    if (cleanUsername.includes('@')) {
-      const error = new Error('Tên đăng nhập không được chứa ký tự @. Để sử dụng email, vui lòng điền vào ô Email.');
+    if (cleanUsername.includes("@")) {
+      const error = new Error(
+        "Tên đăng nhập không được chứa ký tự @. Để sử dụng email, vui lòng điền vào ô Email.",
+      );
       error.status = 400;
-      error.code = 'INVALID_USERNAME_FORMAT';
+      error.code = "INVALID_USERNAME_FORMAT";
       throw error;
     }
 
     // Kiểm tra định dạng Email nếu người dùng có nhập
     if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      const error = new Error('Định dạng email không hợp lệ (ví dụ hợp lệ: example@gmail.com).');
+      const error = new Error(
+        "Định dạng email không hợp lệ (ví dụ hợp lệ: example@gmail.com).",
+      );
       error.status = 400;
-      error.code = 'INVALID_EMAIL_FORMAT';
+      error.code = "INVALID_EMAIL_FORMAT";
       throw error;
     }
 
     if (password.length < 6) {
-      const error = new Error('Mật khẩu phải chứa ít nhất 6 ký tự.');
+      const error = new Error("Mật khẩu phải chứa ít nhất 6 ký tự.");
       error.status = 400;
-      error.code = 'PASSWORD_TOO_SHORT';
+      error.code = "PASSWORD_TOO_SHORT";
       throw error;
     }
 
     // 1. Kiểm tra trùng lặp qua UserRepository
-    const duplicate = await userRepository.checkDuplicate(cleanUsername, cleanEmail);
+    const duplicate = await userRepository.checkDuplicate(
+      cleanUsername,
+      cleanEmail,
+    );
     if (duplicate) {
-      const error = new Error('Tên đăng nhập hoặc Email này đã được sử dụng.');
+      const error = new Error("Tên đăng nhập hoặc Email này đã được sử dụng.");
       error.status = 409;
-      error.code = 'USER_ALREADY_EXISTS';
+      error.code = "USER_ALREADY_EXISTS";
       throw error;
     }
 
     // 2. Lấy role_id cho vai trò CUSTOMER qua UserRepository
-    const roleId = await userRepository.getRoleIdByCode('CUSTOMER');
+    const roleId = await userRepository.getRoleIdByCode("CUSTOMER");
     if (!roleId) {
       const error = new Error("Hệ thống chưa thiết lập vai trò 'CUSTOMER'.");
       error.status = 500;
-      error.code = 'SYSTEM_CONFIG_ERROR';
+      error.code = "SYSTEM_CONFIG_ERROR";
       throw error;
     }
 
@@ -224,9 +247,9 @@ class AuthService {
    */
   async refreshToken({ refreshToken, oldAccessToken }) {
     if (!refreshToken) {
-      const error = new Error('Thiếu Refresh Token.');
+      const error = new Error("Thiếu Refresh Token.");
       error.status = 400;
-      error.code = 'REFRESH_TOKEN_REQUIRED';
+      error.code = "REFRESH_TOKEN_REQUIRED";
       throw error;
     }
 
@@ -241,17 +264,21 @@ class AuthService {
 
     // 3. Kiểm tra user trong DB qua UserRepository
     const user = await userRepository.findAccountStatusById(userId);
-    if (!user || user.account_status !== 'ACTIVE') {
-      const error = new Error('Tài khoản không tồn tại hoặc đã bị khóa.');
+    if (!user || user.account_status !== "ACTIVE") {
+      const error = new Error("Tài khoản không tồn tại hoặc đã bị khóa.");
       error.status = 403;
-      error.code = 'ACCOUNT_DISABLED';
+      error.code = "ACCOUNT_DISABLED";
       throw error;
     }
 
     // 4. Token Rotation: Thu hồi Refresh Token cũ và tạo cặp Token mới
     await tokenService.revokeSession(userId, refreshToken);
 
-    const { accessToken: newAccessToken, refreshToken: newRefreshToken, expiresIn } = tokenService.generateTokens(user);
+    const {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      expiresIn,
+    } = tokenService.generateTokens(user);
     await tokenService.saveSession(userId, newRefreshToken);
 
     return {
@@ -277,7 +304,10 @@ class AuthService {
         // bỏ qua nếu refresh token đã hết hạn
       }
     }
-    return { success: true, message: 'Đăng xuất thành công. Phiên làm việc đã được hủy bỏ.' };
+    return {
+      success: true,
+      message: "Đăng xuất thành công. Phiên làm việc đã được hủy bỏ.",
+    };
   }
 
   /**
@@ -288,30 +318,32 @@ class AuthService {
     if (userId === 999) {
       return {
         user_id: 999,
-        username: 'demo_admin',
-        email: 'admin@minhduc.vn',
-        account_status: 'ACTIVE',
+        username: "demo_admin",
+        email: "admin@minhduc.vn",
+        account_status: "ACTIVE",
         created_at: new Date().toISOString(),
-        role_code: 'ADMIN',
-        role_name: 'Quản trị viên Hệ thống (Demo)',
-        full_name: 'Quản trị viên Demo',
-        phone: '0901234567',
+        role_code: "ADMIN",
+        role_name: "Quản trị viên Hệ thống (Demo)",
+        full_name: "Quản trị viên Demo",
+        phone: "0901234567",
         ava_storage_reference: null,
-        permissions: ['*'],
+        permissions: ["*"],
       };
     }
 
     // Truy vấn thông tin người dùng qua UserRepository
     const user = await userRepository.findFullProfileById(userId);
     if (!user) {
-      const error = new Error('Không tìm thấy người dùng.');
+      const error = new Error("Không tìm thấy người dùng.");
       error.status = 404;
-      error.code = 'USER_NOT_FOUND';
+      error.code = "USER_NOT_FOUND";
       throw error;
     }
 
     // Lấy quyền qua UserRepository
-    const permissions = await userRepository.getPermissionsByRoleId(user.role_id);
+    const permissions = await userRepository.getPermissionsByRoleId(
+      user.role_id,
+    );
 
     return {
       ...user,

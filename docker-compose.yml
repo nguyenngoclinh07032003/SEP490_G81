@@ -23,6 +23,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./database/Database/hrmss_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
 
   # 3. Dịch vụ BACKEND API (Node.js Express)
   backend:

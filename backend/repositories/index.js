@@ -1,1 +1,1 @@
-export { default as userRepository, UserRepository } from './user.repository.js';
+export { default as userRepository } from "./user.repository.js";
