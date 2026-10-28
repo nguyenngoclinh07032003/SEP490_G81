@@ -1,7 +1,11 @@
-// Xuất tập trung các model.
+// Xuất tập trung toàn bộ 32 model của hệ thống HRMSS
 export { default as RoleModel } from './role.model.js';
 export { default as UserAccountModel } from './userAccount.model.js';
 export { default as UserInformationModel } from './userInformation.model.js';
+export { default as UserLocationStateModel } from './userLocationState.model.js';
+export { default as PermissionModel } from './permission.model.js';
+export { default as RolePermissionModel } from './rolePermission.model.js';
+
 export { default as CustomerModel } from './customer.model.js';
 export { default as ServiceAddressModel } from './serviceAddress.model.js';
 export { default as ServiceCategoryModel } from './serviceCategory.model.js';

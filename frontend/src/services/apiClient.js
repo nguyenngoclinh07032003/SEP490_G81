@@ -5,7 +5,9 @@
  * Cung cấp HTTP client tập trung:
  * - Tự động quản lý baseURL (VITE_API_URL hoặc mặc định http://localhost:5000)
  * - Tự động gắn Token xác thực JWT (Bearer) vào Authorization header
- * - Chuẩn hóa xử lý lỗi và JSON response
+ * - Hỗ trợ gửi nhận Session Cookie với credentials: 'include'
+ * - Cơ chế Silent Refresh tự động làm mới Access Token mà không làm gián đoạn người dùng
+ * - Chuẩn hóa mã lỗi code / message_code cho Frontend dễ dàng xử lý
  */
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -68,18 +70,15 @@ class ApiClient {
   }
 
   /**
-   * Gọi API làm mới token (/api/auth/refresh-token)
+   * Gọi API làm mới token (/api/auth/refresh-token) sử dụng Refresh Token hoặc Cookie Session
    */
   async refreshAccessToken() {
     const refreshToken = this.getRefreshToken();
     const oldAccessToken = this.getToken();
 
-    if (!refreshToken) {
-      throw new Error('Không có Refresh Token.');
-    }
-
     const response = await fetch(`${this.baseURL}/api/auth/refresh-token`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken, oldAccessToken }),
     });
@@ -87,12 +86,16 @@ class ApiClient {
     const data = await response.json();
     if (!response.ok || !data.success) {
       this.clearTokens();
-      throw new Error(data.message || 'Làm mới token thất bại.');
+      const err = new Error(data?.message || 'Làm mới token thất bại.');
+      err.code = data?.code || data?.message_code || 'REFRESH_FAILED';
+      err.message_code = err.code;
+      throw err;
     }
 
-    const { accessToken, refreshToken: newRefreshToken } = data.data;
-    this.setTokens(accessToken, newRefreshToken);
-    return accessToken;
+    const { accessToken, token, refreshToken: newRefreshToken } = data.data;
+    const finalToken = accessToken || token;
+    this.setTokens(finalToken, newRefreshToken);
+    return finalToken;
   }
 
   /**
@@ -121,6 +124,7 @@ class ApiClient {
     const url = endpoint.startsWith('http') ? endpoint : `${this.baseURL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
     
     const config = {
+      credentials: options.credentials || 'include',
       ...options,
       headers: this.getHeaders(options.headers, isFormData),
     };
@@ -136,46 +140,40 @@ class ApiClient {
         data = await response.text();
       }
 
-      // Xử lý khi Access Token hết hạn sau 15 phút (mã 401 TOKEN_EXPIRED)
-      if (response.status === 401 && !options._isRetry && !endpoint.includes('/refresh-token')) {
-        const isExpired = (data && typeof data === 'object' && (data.code === 'TOKEN_EXPIRED' || data.message?.includes('hết hạn')));
-        const refreshToken = this.getRefreshToken();
-
-        if (isExpired && refreshToken) {
-          if (!this.isRefreshing) {
-            this.isRefreshing = true;
-            try {
-              const newAccessToken = await this.refreshAccessToken();
-              this.isRefreshing = false;
-              this.onRefreshed(newAccessToken);
-            } catch (refreshErr) {
-              this.isRefreshing = false;
-              this.refreshSubscribers = [];
-              this.clearTokens();
-              throw refreshErr;
-            }
+      // Xử lý khi Access Token hết hạn (401) -> Kích hoạt Silent Refresh
+      if (response.status === 401 && !options._isRetry && !endpoint.includes('/refresh-token') && !endpoint.includes('/login')) {
+        if (!this.isRefreshing) {
+          this.isRefreshing = true;
+          try {
+            const newAccessToken = await this.refreshAccessToken();
+            this.isRefreshing = false;
+            this.onRefreshed(newAccessToken);
+          } catch (refreshErr) {
+            this.isRefreshing = false;
+            this.refreshSubscribers = [];
+            throw refreshErr;
           }
-
-          // Xếp hàng các request chờ Token mới và tự động gửi lại
-          return new Promise((resolve, reject) => {
-            this.subscribeTokenRefresh(async (newToken) => {
-              try {
-                const retryOptions = {
-                  ...options,
-                  _isRetry: true,
-                  headers: {
-                    ...options.headers,
-                    Authorization: `Bearer ${newToken}`,
-                  },
-                };
-                const retryResult = await this.request(endpoint, retryOptions);
-                resolve(retryResult);
-              } catch (retryErr) {
-                reject(retryErr);
-              }
-            });
-          });
         }
+
+        // Xếp hàng các request chờ Token mới và tự động gửi lại
+        return new Promise((resolve, reject) => {
+          this.subscribeTokenRefresh(async (newToken) => {
+            try {
+              const retryOptions = {
+                ...options,
+                _isRetry: true,
+                headers: {
+                  ...options.headers,
+                  Authorization: `Bearer ${newToken}`,
+                },
+              };
+              const retryResult = await this.request(endpoint, retryOptions);
+              resolve(retryResult);
+            } catch (retryErr) {
+              reject(retryErr);
+            }
+          });
+        });
       }
 
       if (!response.ok) {
@@ -185,13 +183,14 @@ class ApiClient {
         
         const error = new Error(errorMessage);
         error.status = response.status;
+        error.code = data?.code || data?.message_code || 'HTTP_ERROR';
+        error.message_code = error.code;
         error.data = data;
         throw error;
       }
 
       return data;
     } catch (err) {
-      // Re-throw để các service hoặc UI component xử lý theo nghiệp vụ
       throw err;
     }
   }

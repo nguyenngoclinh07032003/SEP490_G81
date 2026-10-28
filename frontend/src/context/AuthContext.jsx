@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authService } from '../services';
 
 const AuthContext = createContext();
@@ -60,14 +60,18 @@ export const DEMO_ACCOUNTS = {
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('hrmss_token') || null);
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('hrmss_user');
-    // Mặc định khởi đầu với tài khoản Quản trị Admin hoặc khách hàng
-    return saved ? JSON.parse(saved) : DEMO_ACCOUNTS.ADMIN;
+    try {
+      const saved = localStorage.getItem('hrmss_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [permissions, setPermissions] = useState([]);
 
-  // Lưu trạng thái vào localStorage
+  // Đồng bộ user vào localStorage
   useEffect(() => {
     if (user) {
       localStorage.setItem('hrmss_user', JSON.stringify(user));
@@ -76,6 +80,7 @@ export function AuthProvider({ children }) {
     }
   }, [user]);
 
+  // Đồng bộ token vào localStorage
   useEffect(() => {
     if (token) {
       localStorage.setItem('hrmss_token', token);
@@ -84,29 +89,84 @@ export function AuthProvider({ children }) {
     }
   }, [token]);
 
-  // Đăng nhập kết nối API thông qua authService tập trung
+  /**
+   * Khởi tạo & duy trì phiên làm việc khi F5 lại trang (Silent Refresh & Session Check)
+   */
+  const checkAuth = useCallback(async () => {
+    setLoading(true);
+    try {
+      // 1. Thử gọi /api/auth/me để kiểm tra Token hiện tại hoặc Express-Session Cookie
+      const res = await authService.getMe();
+      if (res?.success && res?.data?.user) {
+        setUser({ ...res.data.user, isLoggedIn: true });
+        if (res.data.permissions) {
+          setPermissions(res.data.permissions);
+        }
+        return;
+      }
+    } catch (err) {
+      // 2. Nếu /me thất bại (ví dụ Access Token 15m đã hết hạn), thử kích hoạt Silent Refresh qua Session
+      try {
+        const refreshRes = await authService.refreshToken();
+        if (refreshRes?.success && refreshRes?.data) {
+          const newAccess = refreshRes.data.accessToken || refreshRes.data.token;
+          if (newAccess) setToken(newAccess);
+
+          // Sau khi làm mới token thành công, lấy lại hồ sơ người dùng
+          const meAfterRefresh = await authService.getMe();
+          if (meAfterRefresh?.success && meAfterRefresh?.data?.user) {
+            setUser({ ...meAfterRefresh.data.user, isLoggedIn: true });
+            if (meAfterRefresh.data.permissions) {
+              setPermissions(meAfterRefresh.data.permissions);
+            }
+            return;
+          }
+        }
+      } catch (refreshErr) {
+        // Cả 2 cách xác thực với Backend đều thất bại
+        console.debug('Không tìm thấy phiên backend đang hoạt động:', refreshErr.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Chạy kiểm tra phiên làm việc ngay khi ứng dụng mount (F5 trang)
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  /**
+   * Đăng nhập kết nối API thông qua authService tập trung
+   */
   const login = async (credentials) => {
     setLoading(true);
     try {
       const data = await authService.login({
-        username: credentials.username || credentials.identifier,
+        username: credentials.username || credentials.identifier || credentials.email,
+        email: credentials.email,
+        identifier: credentials.identifier || credentials.username || credentials.email,
         password: credentials.password
       });
 
       if (data && data.success) {
-        setToken(data.data.token);
-        setUser({
+        setToken(data.data.token || data.data.accessToken);
+        const loggedUser = {
           ...data.data.user,
           isLoggedIn: true
-        });
-        return { success: true, user: data.data.user };
+        };
+        setUser(loggedUser);
+        if (data.data.permissions) {
+          setPermissions(data.data.permissions);
+        }
+        return { success: true, user: loggedUser };
       } else {
         throw new Error(data?.message || 'Đăng nhập không thành công');
       }
     } catch (err) {
-      console.warn('Backend login fallback sang local demo credentials:', err.message);
+      console.warn('Backend login fallback sang local credentials:', err.message);
       
-      // Kiểm tra xem có khớp demo account nào không
+      // Kiểm tra demo account
       const matchedRole = Object.keys(DEMO_ACCOUNTS).find(
         r => DEMO_ACCOUNTS[r].username.toLowerCase() === credentials.username?.toLowerCase()
       );
@@ -118,7 +178,7 @@ export function AuthProvider({ children }) {
         return { success: true, user: demoUser };
       }
 
-      // Nếu người dùng nhập thông tin tự do
+      // Nhập tự do
       const fallbackUser = {
         userId: Date.now(),
         username: credentials.username || 'user',
@@ -135,14 +195,18 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Chuyển đổi vai trò người dùng (Minh Đức RBAC)
+  /**
+   * Chuyển đổi vai trò người dùng (Minh Đức RBAC)
+   */
   const switchRole = (roleCode) => {
     const targetAccount = DEMO_ACCOUNTS[roleCode] || DEMO_ACCOUNTS.CUSTOMER;
     setUser({ ...targetAccount, isLoggedIn: true });
     setToken('demo_token_' + roleCode);
   };
 
-  // Đăng xuất thông qua authService tập trung
+  /**
+   * Đăng xuất thông qua authService tập trung
+   */
   const logout = async () => {
     try {
       if (token && !token.startsWith('demo_token_')) {
@@ -153,6 +217,7 @@ export function AuthProvider({ children }) {
     }
     setUser(null);
     setToken(null);
+    setPermissions([]);
     localStorage.removeItem('hrmss_user');
     localStorage.removeItem('hrmss_token');
     localStorage.removeItem('hrmss_refresh_token');
@@ -171,6 +236,11 @@ export function AuthProvider({ children }) {
     return allowedRoles.includes(user.role);
   };
 
+  const hasPermission = (permissionCode) => {
+    if (isAdmin) return true;
+    return permissions.includes(permissionCode);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -180,13 +250,16 @@ export function AuthProvider({ children }) {
         login,
         logout,
         switchRole,
+        checkAuth,
         role,
+        permissions,
         isAdmin,
         isManager,
         isStaff,
         isTechnician,
         isCustomer,
-        hasRole
+        hasRole,
+        hasPermission,
       }}
     >
       {children}

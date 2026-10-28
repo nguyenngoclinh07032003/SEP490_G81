@@ -1,16 +1,44 @@
 import React from 'react';
 import { Navigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { ShieldAlert, ArrowLeft, Home, LogIn } from 'lucide-react';
+import { ShieldAlert, Home, LogIn, Loader2 } from 'lucide-react';
 
 export default function ProtectedRoute({ children, allowedRoles }) {
-  const { user, hasRole } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
 
+  // Khi đang khôi phục phiên (F5 trang / Silent Refresh), giữ nguyên màn hình tải
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#F8FAFC',
+        color: '#0284C7'
+      }}>
+        <Loader2 size={36} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+        <p style={{ marginTop: '16px', fontSize: '0.95rem', fontWeight: 600, color: '#64748B' }}>
+          Đang xác thực phiên làm việc...
+        </p>
+        <style>{`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Nếu không đăng nhập sau khi đã kiểm tra xong, chuyển hướng sang Sign In
   if (!user) {
     return <Navigate to="/sign-in" state={{ from: location }} replace />;
   }
 
+  // Nếu vai trò không khớp
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return (
       <div style={{

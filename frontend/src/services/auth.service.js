@@ -19,6 +19,8 @@ import apiClient from './apiClient';
 export async function loginApi(credentials) {
   const payload = {
     username: credentials.username || credentials.identifier,
+    email: credentials.email,
+    identifier: credentials.identifier || credentials.username || credentials.email,
     password: credentials.password,
   };
 
