@@ -1,0 +1,15 @@
+{
+  "name": "hrmss-user-auth",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace backend",
+    "start": "npm run start --workspace backend",
+    "test": "npm test --workspace backend",
+    "test:full": "npm run test:full --workspace backend",
+    "dev:services": "node backend/scripts/start-dev-services.js"
+  }
+}

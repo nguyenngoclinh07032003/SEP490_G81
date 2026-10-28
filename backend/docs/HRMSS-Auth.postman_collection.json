@@ -1,0 +1,3279 @@
+{
+  "info": {
+    "name": "HRMSS - Kiểm thử Auth hiện tại",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Chạy theo thứ tự, 1 iteration. Điền password vào environment local. Collection tạo 5 account demo; không kiểm tra các API chưa triển khai. Khóa tài khoản, thay đổi permission, TTL ngắn và lỗi phụ thuộc được kiểm thử bằng npm run test:full trong DB riêng. Không export token/password sau khi chạy."
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Kiểm tra hợp đồng chung cho cả thành công và lỗi.",
+          "pm.test('Envelope và requestId thống nhất', function () {",
+          "  const body = pm.response.json();",
+          "  if (typeof body.success !== 'boolean' || typeof body.code !== 'string' || typeof body.message !== 'string' || !('data' in body)) throw new Error('Sai envelope');",
+          "  pm.expect(body.success).to.eql(pm.response.code >= 200 && pm.response.code < 300);",
+          "  pm.expect(body.meta.requestId).to.eql(pm.response.headers.get('X-Request-Id'));",
+          "  pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store');",
+          "  if (!body.success && (body.data !== null || !Array.isArray(body.errors))) throw new Error('Sai envelope lỗi');",
+          "  for (const field of ['password_hash', 'refreshToken', 'refreshExpiresIn', 'refresh_token']) {",
+          "    if (JSON.stringify(body).includes('\"' + field + '\":')) throw new Error('Lộ trường nội bộ: ' + field);",
+          "  }",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "run_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Khởi động và phản hồi",
+      "item": [
+        {
+          "name": "01 - Health",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/health",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Mỗi lần chạy collection sinh tên demo mới, tránh đụng dữ liệu lần trước.",
+                  "pm.collectionVariables.set('run_id', Date.now().toString(36) + Math.random().toString(36).slice(2, 7));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Readiness DB/Redis",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/health/ready",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('Các phụ thuộc sẵn sàng', function () {",
+                  "    pm.expect(pm.response.json().data.dependencies.postgres).to.eql('up');",
+                  "    pm.expect(pm.response.json().data.dependencies.redis).to.eql('up');",
+                  "  });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Query lạ bị từ chối",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/health?unexpected=1",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Không có route gốc",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}",
+            "description": "Kỳ vọng HTTP 404. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', function () { pm.expect(pm.response.code).to.eql(404); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 - JSON hỏng",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/login",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 - Chưa đăng nhập",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 401. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.expect(pm.response.code).to.eql(401); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - Signup và validation",
+      "item": [
+        {
+          "name": "01 - Không cho tự chọn ADMIN",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/signup",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_customer\",\n  \"email\": \"demo_{{run_id}}_customer@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\",\n  \"role\": \"ADMIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Không nhận trạng thái",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/signup",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_customer\",\n  \"email\": \"demo_{{run_id}}_customer@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\",\n  \"account_status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Từ chối trường lạ",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/signup",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_customer\",\n  \"email\": \"demo_{{run_id}}_customer@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\",\n  \"unknown\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Xác nhận mật khẩu sai",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/signup",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_customer\",\n  \"email\": \"demo_{{run_id}}_customer@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"DoesNotMatch123!\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 - Password quá ngắn",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/login",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{admin_identifier}}\",\n  \"password\": \"short\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 - Signup thành CUSTOMER",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/signup",
+            "description": "Tạo 1 tài khoản demo mới. Không có API xóa; xem hướng dẫn dọn đúng fixture sau demo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_customer\",\n  \"email\": \"demo_{{run_id}}_customer@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.test('Vai trò CUSTOMER', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('CUSTOMER'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 - Signup trùng trả 409",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/signup",
+            "description": "Kỳ vọng HTTP 409. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_customer\",\n  \"email\": \"demo_{{run_id}}_customer@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', function () { pm.expect(pm.response.code).to.eql(409); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 - Login khách hàng vừa tạo",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/login",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"demo_{{run_id}}_customer\",\n  \"password\": \"{{demo_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "",
+                  "const result = pm.response.json().data;",
+                  "const cookie = pm.response.headers.get('Set-Cookie') || '';",
+                  "pm.test('Token và cookie đúng định dạng', function () {",
+                  "  if (!/^[a-f0-9]{64}$/.test(result.access_token) || result.token_type !== 'Bearer') throw new Error('Access token không hợp lệ');",
+                  "  if (!/^hrmss_refresh=[a-f0-9]{64};/.test(cookie)) throw new Error('Thiếu refresh cookie');",
+                  "  if (!/HttpOnly/i.test(cookie) || !/Path=/api/v1/auth/i.test(cookie) || !/SameSite=/i.test(cookie)) throw new Error('Sai thuộc tính cookie');",
+                  "  if (!(result.expires_in > 0 && result.expires_in <= 900)) throw new Error('Sai TTL access token');",
+                  "});",
+                  "pm.collectionVariables.set('token_DEMO', result.access_token);",
+                  "pm.collectionVariables.set('cookie_DEMO', cookie.split(';')[0]);",
+                  "pm.collectionVariables.set('id_DEMO', result.account.user_id);",
+                  "pm.test('Vai trò CUSTOMER', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('CUSTOMER'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 - Logout tài khoản demo",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_DEMO}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/logout",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Đủ 5 role và phạm vi me",
+      "item": [
+        {
+          "name": "ADMIN - Login",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/login",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{admin_identifier}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "",
+                  "const result = pm.response.json().data;",
+                  "const cookie = pm.response.headers.get('Set-Cookie') || '';",
+                  "pm.test('Token và cookie đúng định dạng', function () {",
+                  "  if (!/^[a-f0-9]{64}$/.test(result.access_token) || result.token_type !== 'Bearer') throw new Error('Access token không hợp lệ');",
+                  "  if (!/^hrmss_refresh=[a-f0-9]{64};/.test(cookie)) throw new Error('Thiếu refresh cookie');",
+                  "  if (!/HttpOnly/i.test(cookie) || !/Path=/api/v1/auth/i.test(cookie) || !/SameSite=/i.test(cookie)) throw new Error('Sai thuộc tính cookie');",
+                  "  if (!(result.expires_in > 0 && result.expires_in <= 900)) throw new Error('Sai TTL access token');",
+                  "});",
+                  "pm.collectionVariables.set('token_ADMIN', result.access_token);",
+                  "pm.collectionVariables.set('cookie_ADMIN', cookie.split(';')[0]);",
+                  "pm.collectionVariables.set('id_ADMIN', result.account.user_id);",
+                  "pm.test('Vai trò ADMIN', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('ADMIN'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN - Me đúng chủ token",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('Vai trò ADMIN', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('ADMIN'); });",
+                  "pm.test('Đúng tài khoản đã đăng nhập', function () { pm.expect(pm.response.json().data.account.user_id).to.eql(pm.collectionVariables.get('id_ADMIN')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN - Không nhận user_id từ client",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me?user_id={{id_ADMIN}}",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MANAGER - Login",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/login",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{manager_identifier}}\",\n  \"password\": \"{{manager_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "",
+                  "const result = pm.response.json().data;",
+                  "const cookie = pm.response.headers.get('Set-Cookie') || '';",
+                  "pm.test('Token và cookie đúng định dạng', function () {",
+                  "  if (!/^[a-f0-9]{64}$/.test(result.access_token) || result.token_type !== 'Bearer') throw new Error('Access token không hợp lệ');",
+                  "  if (!/^hrmss_refresh=[a-f0-9]{64};/.test(cookie)) throw new Error('Thiếu refresh cookie');",
+                  "  if (!/HttpOnly/i.test(cookie) || !/Path=/api/v1/auth/i.test(cookie) || !/SameSite=/i.test(cookie)) throw new Error('Sai thuộc tính cookie');",
+                  "  if (!(result.expires_in > 0 && result.expires_in <= 900)) throw new Error('Sai TTL access token');",
+                  "});",
+                  "pm.collectionVariables.set('token_MANAGER', result.access_token);",
+                  "pm.collectionVariables.set('cookie_MANAGER', cookie.split(';')[0]);",
+                  "pm.collectionVariables.set('id_MANAGER', result.account.user_id);",
+                  "pm.test('Vai trò MANAGER', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('MANAGER'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MANAGER - Me đúng chủ token",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_MANAGER}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('Vai trò MANAGER', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('MANAGER'); });",
+                  "pm.test('Đúng tài khoản đã đăng nhập', function () { pm.expect(pm.response.json().data.account.user_id).to.eql(pm.collectionVariables.get('id_MANAGER')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MANAGER - Không nhận user_id từ client",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_MANAGER}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me?user_id={{id_ADMIN}}",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MANAGER - Không được tạo ADMIN",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_MANAGER}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/admin/accounts",
+            "description": "Kỳ vọng HTTP 403. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_denied\",\n  \"email\": \"demo_{{run_id}}_denied@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\",\n  \"role\": \"ADMIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', function () { pm.expect(pm.response.code).to.eql(403); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OFFICE_STAFF - Login",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/login",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{staff_identifier}}\",\n  \"password\": \"{{staff_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "",
+                  "const result = pm.response.json().data;",
+                  "const cookie = pm.response.headers.get('Set-Cookie') || '';",
+                  "pm.test('Token và cookie đúng định dạng', function () {",
+                  "  if (!/^[a-f0-9]{64}$/.test(result.access_token) || result.token_type !== 'Bearer') throw new Error('Access token không hợp lệ');",
+                  "  if (!/^hrmss_refresh=[a-f0-9]{64};/.test(cookie)) throw new Error('Thiếu refresh cookie');",
+                  "  if (!/HttpOnly/i.test(cookie) || !/Path=/api/v1/auth/i.test(cookie) || !/SameSite=/i.test(cookie)) throw new Error('Sai thuộc tính cookie');",
+                  "  if (!(result.expires_in > 0 && result.expires_in <= 900)) throw new Error('Sai TTL access token');",
+                  "});",
+                  "pm.collectionVariables.set('token_OFFICE_STAFF', result.access_token);",
+                  "pm.collectionVariables.set('cookie_OFFICE_STAFF', cookie.split(';')[0]);",
+                  "pm.collectionVariables.set('id_OFFICE_STAFF', result.account.user_id);",
+                  "pm.test('Vai trò OFFICE_STAFF', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('OFFICE_STAFF'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OFFICE_STAFF - Me đúng chủ token",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_OFFICE_STAFF}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('Vai trò OFFICE_STAFF', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('OFFICE_STAFF'); });",
+                  "pm.test('Đúng tài khoản đã đăng nhập', function () { pm.expect(pm.response.json().data.account.user_id).to.eql(pm.collectionVariables.get('id_OFFICE_STAFF')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OFFICE_STAFF - Không nhận user_id từ client",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_OFFICE_STAFF}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me?user_id={{id_ADMIN}}",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OFFICE_STAFF - Không được tạo ADMIN",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_OFFICE_STAFF}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/admin/accounts",
+            "description": "Kỳ vọng HTTP 403. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_denied\",\n  \"email\": \"demo_{{run_id}}_denied@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\",\n  \"role\": \"ADMIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', function () { pm.expect(pm.response.code).to.eql(403); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TECHNICIAN - Login",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/login",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{technician_identifier}}\",\n  \"password\": \"{{technician_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "",
+                  "const result = pm.response.json().data;",
+                  "const cookie = pm.response.headers.get('Set-Cookie') || '';",
+                  "pm.test('Token và cookie đúng định dạng', function () {",
+                  "  if (!/^[a-f0-9]{64}$/.test(result.access_token) || result.token_type !== 'Bearer') throw new Error('Access token không hợp lệ');",
+                  "  if (!/^hrmss_refresh=[a-f0-9]{64};/.test(cookie)) throw new Error('Thiếu refresh cookie');",
+                  "  if (!/HttpOnly/i.test(cookie) || !/Path=/api/v1/auth/i.test(cookie) || !/SameSite=/i.test(cookie)) throw new Error('Sai thuộc tính cookie');",
+                  "  if (!(result.expires_in > 0 && result.expires_in <= 900)) throw new Error('Sai TTL access token');",
+                  "});",
+                  "pm.collectionVariables.set('token_TECHNICIAN', result.access_token);",
+                  "pm.collectionVariables.set('cookie_TECHNICIAN', cookie.split(';')[0]);",
+                  "pm.collectionVariables.set('id_TECHNICIAN', result.account.user_id);",
+                  "pm.test('Vai trò TECHNICIAN', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('TECHNICIAN'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TECHNICIAN - Me đúng chủ token",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_TECHNICIAN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('Vai trò TECHNICIAN', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('TECHNICIAN'); });",
+                  "pm.test('Đúng tài khoản đã đăng nhập', function () { pm.expect(pm.response.json().data.account.user_id).to.eql(pm.collectionVariables.get('id_TECHNICIAN')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TECHNICIAN - Không nhận user_id từ client",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_TECHNICIAN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me?user_id={{id_ADMIN}}",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TECHNICIAN - Không được tạo ADMIN",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_TECHNICIAN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/admin/accounts",
+            "description": "Kỳ vọng HTTP 403. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_denied\",\n  \"email\": \"demo_{{run_id}}_denied@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\",\n  \"role\": \"ADMIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', function () { pm.expect(pm.response.code).to.eql(403); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CUSTOMER - Login",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/login",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{customer_identifier}}\",\n  \"password\": \"{{customer_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "",
+                  "const result = pm.response.json().data;",
+                  "const cookie = pm.response.headers.get('Set-Cookie') || '';",
+                  "pm.test('Token và cookie đúng định dạng', function () {",
+                  "  if (!/^[a-f0-9]{64}$/.test(result.access_token) || result.token_type !== 'Bearer') throw new Error('Access token không hợp lệ');",
+                  "  if (!/^hrmss_refresh=[a-f0-9]{64};/.test(cookie)) throw new Error('Thiếu refresh cookie');",
+                  "  if (!/HttpOnly/i.test(cookie) || !/Path=/api/v1/auth/i.test(cookie) || !/SameSite=/i.test(cookie)) throw new Error('Sai thuộc tính cookie');",
+                  "  if (!(result.expires_in > 0 && result.expires_in <= 900)) throw new Error('Sai TTL access token');",
+                  "});",
+                  "pm.collectionVariables.set('token_CUSTOMER', result.access_token);",
+                  "pm.collectionVariables.set('cookie_CUSTOMER', cookie.split(';')[0]);",
+                  "pm.collectionVariables.set('id_CUSTOMER', result.account.user_id);",
+                  "pm.test('Vai trò CUSTOMER', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('CUSTOMER'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CUSTOMER - Me đúng chủ token",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_CUSTOMER}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('Vai trò CUSTOMER', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('CUSTOMER'); });",
+                  "pm.test('Đúng tài khoản đã đăng nhập', function () { pm.expect(pm.response.json().data.account.user_id).to.eql(pm.collectionVariables.get('id_CUSTOMER')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CUSTOMER - Không nhận user_id từ client",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_CUSTOMER}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me?user_id={{id_ADMIN}}",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CUSTOMER - Không được tạo ADMIN",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_CUSTOMER}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/admin/accounts",
+            "description": "Kỳ vọng HTTP 403. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_denied\",\n  \"email\": \"demo_{{run_id}}_denied@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\",\n  \"role\": \"ADMIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', function () { pm.expect(pm.response.code).to.eql(403); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mật khẩu sai trả 401",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/login",
+            "description": "Kỳ vọng HTTP 401. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{admin_identifier}}\",\n  \"password\": \"WrongPassword123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.expect(pm.response.code).to.eql(401); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tài khoản lạ trả 401",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/login",
+            "description": "Kỳ vọng HTTP 401. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"missing_{{run_id}}\",\n  \"password\": \"{{demo_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.expect(pm.response.code).to.eql(401); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - ADMIN tạo nội bộ",
+      "item": [
+        {
+          "name": "ADMIN tạo ADMIN",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/admin/accounts",
+            "description": "Kỳ vọng HTTP 201. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_admin\",\n  \"email\": \"demo_{{run_id}}_admin@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\",\n  \"role\": \"ADMIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.test('Vai trò ADMIN', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('ADMIN'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN tạo MANAGER",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/admin/accounts",
+            "description": "Kỳ vọng HTTP 201. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_manager\",\n  \"email\": \"demo_{{run_id}}_manager@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\",\n  \"role\": \"MANAGER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.test('Vai trò MANAGER', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('MANAGER'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN tạo OFFICE_STAFF",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/admin/accounts",
+            "description": "Kỳ vọng HTTP 201. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_office_staff\",\n  \"email\": \"demo_{{run_id}}_office_staff@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\",\n  \"role\": \"OFFICE_STAFF\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.test('Vai trò OFFICE_STAFF', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('OFFICE_STAFF'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN tạo TECHNICIAN",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/admin/accounts",
+            "description": "Kỳ vọng HTTP 201. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_technician\",\n  \"email\": \"demo_{{run_id}}_technician@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\",\n  \"role\": \"TECHNICIAN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.test('Vai trò TECHNICIAN', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('TECHNICIAN'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nội bộ không nhận CUSTOMER",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/admin/accounts",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_not_internal\",\n  \"email\": \"demo_{{run_id}}_not_internal@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\",\n  \"role\": \"CUSTOMER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nội bộ trùng tài khoản trả 409",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/admin/accounts",
+            "description": "Kỳ vọng HTTP 409. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{run_id}}_admin\",\n  \"email\": \"demo_{{run_id}}_admin@example.test\",\n  \"password\": \"{{demo_password}}\",\n  \"confirm_password\": \"{{demo_password}}\",\n  \"full_name\": \"Demo mentor\",\n  \"phone\": \"0900000000\",\n  \"role\": \"ADMIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', function () { pm.expect(pm.response.code).to.eql(409); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Refresh, Origin và phát hiện dùng lại",
+      "item": [
+        {
+          "name": "01 - Refresh thiếu Origin",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "{{cookie_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/refresh",
+            "description": "Kỳ vọng HTTP 403. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', function () { pm.expect(pm.response.code).to.eql(403); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Refresh Origin lạ",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "https://evil.test"
+              },
+              {
+                "key": "Cookie",
+                "value": "{{cookie_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/refresh",
+            "description": "Kỳ vọng HTTP 403. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', function () { pm.expect(pm.response.code).to.eql(403); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Refresh thiếu cookie",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/refresh",
+            "description": "Kỳ vọng HTTP 401. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.expect(pm.response.code).to.eql(401); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Không nhận refresh token trong JSON",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Cookie",
+                "value": "{{cookie_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/refresh",
+            "description": "Kỳ vọng HTTP 400. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"not-accepted\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', function () { pm.expect(pm.response.code).to.eql(400); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 - Rotation thành công",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Cookie",
+                "value": "{{cookie_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/refresh",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.collectionVariables.set('cookie_before_rotation', pm.collectionVariables.get('cookie_ADMIN'));",
+                  "pm.collectionVariables.set('access_before_rotation', pm.collectionVariables.get('token_ADMIN'));",
+                  "const result = pm.response.json().data;",
+                  "const cookie = pm.response.headers.get('Set-Cookie') || '';",
+                  "pm.test('Token và cookie đúng định dạng', function () {",
+                  "  if (!/^[a-f0-9]{64}$/.test(result.access_token) || result.token_type !== 'Bearer') throw new Error('Access token không hợp lệ');",
+                  "  if (!/^hrmss_refresh=[a-f0-9]{64};/.test(cookie)) throw new Error('Thiếu refresh cookie');",
+                  "  if (!/HttpOnly/i.test(cookie) || !/Path=/api/v1/auth/i.test(cookie) || !/SameSite=/i.test(cookie)) throw new Error('Sai thuộc tính cookie');",
+                  "  if (!(result.expires_in > 0 && result.expires_in <= 900)) throw new Error('Sai TTL access token');",
+                  "});",
+                  "pm.collectionVariables.set('token_ADMIN', result.access_token);",
+                  "pm.collectionVariables.set('cookie_ADMIN', cookie.split(';')[0]);",
+                  "pm.collectionVariables.set('id_ADMIN', result.account.user_id);",
+                  "pm.test('Vai trò ADMIN', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('ADMIN'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 - Access mới còn dùng được",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 - Access trước rotation còn TTL",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_before_rotation}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 - Dùng lại refresh cũ",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Cookie",
+                "value": "{{cookie_before_rotation}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/refresh",
+            "description": "Kỳ vọng HTTP 401. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.expect(pm.response.code).to.eql(401); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 - Access mới cũng bị thu hồi",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 401. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.expect(pm.response.code).to.eql(401); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 - Refresh mới cũng bị thu hồi",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Cookie",
+                "value": "{{cookie_ADMIN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/refresh",
+            "description": "Kỳ vọng HTTP 401. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.expect(pm.response.code).to.eql(401); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 - Nhiều phiên và logout",
+      "item": [
+        {
+          "name": "01 - Login nhóm A",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/login",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{admin_identifier}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "",
+                  "const result = pm.response.json().data;",
+                  "const cookie = pm.response.headers.get('Set-Cookie') || '';",
+                  "pm.test('Token và cookie đúng định dạng', function () {",
+                  "  if (!/^[a-f0-9]{64}$/.test(result.access_token) || result.token_type !== 'Bearer') throw new Error('Access token không hợp lệ');",
+                  "  if (!/^hrmss_refresh=[a-f0-9]{64};/.test(cookie)) throw new Error('Thiếu refresh cookie');",
+                  "  if (!/HttpOnly/i.test(cookie) || !/Path=/api/v1/auth/i.test(cookie) || !/SameSite=/i.test(cookie)) throw new Error('Sai thuộc tính cookie');",
+                  "  if (!(result.expires_in > 0 && result.expires_in <= 900)) throw new Error('Sai TTL access token');",
+                  "});",
+                  "pm.collectionVariables.set('token_A', result.access_token);",
+                  "pm.collectionVariables.set('cookie_A', cookie.split(';')[0]);",
+                  "pm.collectionVariables.set('id_A', result.account.user_id);",
+                  "pm.test('Vai trò ADMIN', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('ADMIN'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - Login nhóm B",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/login",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{admin_identifier}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "",
+                  "const result = pm.response.json().data;",
+                  "const cookie = pm.response.headers.get('Set-Cookie') || '';",
+                  "pm.test('Token và cookie đúng định dạng', function () {",
+                  "  if (!/^[a-f0-9]{64}$/.test(result.access_token) || result.token_type !== 'Bearer') throw new Error('Access token không hợp lệ');",
+                  "  if (!/^hrmss_refresh=[a-f0-9]{64};/.test(cookie)) throw new Error('Thiếu refresh cookie');",
+                  "  if (!/HttpOnly/i.test(cookie) || !/Path=/api/v1/auth/i.test(cookie) || !/SameSite=/i.test(cookie)) throw new Error('Sai thuộc tính cookie');",
+                  "  if (!(result.expires_in > 0 && result.expires_in <= 900)) throw new Error('Sai TTL access token');",
+                  "});",
+                  "pm.collectionVariables.set('token_B', result.access_token);",
+                  "pm.collectionVariables.set('cookie_B', cookie.split(';')[0]);",
+                  "pm.collectionVariables.set('id_B', result.account.user_id);",
+                  "pm.test('Vai trò ADMIN', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('ADMIN'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - Logout nhóm A bằng Bearer",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_A}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/logout",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Nhóm A bị chặn",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_A}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 401. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.expect(pm.response.code).to.eql(401); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 - Nhóm B còn hoạt động",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_B}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 - Refresh nhóm A bị chặn",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Cookie",
+                "value": "{{cookie_A}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/refresh",
+            "description": "Kỳ vọng HTTP 401. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.expect(pm.response.code).to.eql(401); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 - Logout tất cả phiên ADMIN",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_B}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/logout-all",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 - Access nhóm B bị chặn",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_B}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 401. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.expect(pm.response.code).to.eql(401); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 - Refresh nhóm B bị chặn",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Cookie",
+                "value": "{{cookie_B}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/refresh",
+            "description": "Kỳ vọng HTTP 401. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.expect(pm.response.code).to.eql(401); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 - CUSTOMER không bị ảnh hưởng",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_CUSTOMER}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11 - Login mới sau logout-all",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/login",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifier\": \"{{admin_identifier}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "",
+                  "const result = pm.response.json().data;",
+                  "const cookie = pm.response.headers.get('Set-Cookie') || '';",
+                  "pm.test('Token và cookie đúng định dạng', function () {",
+                  "  if (!/^[a-f0-9]{64}$/.test(result.access_token) || result.token_type !== 'Bearer') throw new Error('Access token không hợp lệ');",
+                  "  if (!/^hrmss_refresh=[a-f0-9]{64};/.test(cookie)) throw new Error('Thiếu refresh cookie');",
+                  "  if (!/HttpOnly/i.test(cookie) || !/Path=/api/v1/auth/i.test(cookie) || !/SameSite=/i.test(cookie)) throw new Error('Sai thuộc tính cookie');",
+                  "  if (!(result.expires_in > 0 && result.expires_in <= 900)) throw new Error('Sai TTL access token');",
+                  "});",
+                  "pm.collectionVariables.set('token_C', result.access_token);",
+                  "pm.collectionVariables.set('cookie_C', cookie.split(';')[0]);",
+                  "pm.collectionVariables.set('id_C', result.account.user_id);",
+                  "pm.test('Vai trò ADMIN', function () { pm.expect(pm.response.json().data.account.role.role_code).to.eql('ADMIN'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12 - Logout chỉ bằng cookie",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Cookie",
+                "value": "{{cookie_C}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/logout",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13 - Access nhóm C bị chặn",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_C}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/me",
+            "description": "Kỳ vọng HTTP 401. Chạy theo thứ tự trong collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.expect(pm.response.code).to.eql(401); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dọn phiên demo MANAGER",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_MANAGER}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/logout",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dọn phiên demo OFFICE_STAFF",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_OFFICE_STAFF}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/logout",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dọn phiên demo TECHNICIAN",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_TECHNICIAN}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/logout",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dọn phiên demo CUSTOMER",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_CUSTOMER}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{base_url}}/auth/logout",
+            "description": "Kỳ vọng HTTP 200. Chạy theo thứ tự trong collection.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

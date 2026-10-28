@@ -1,0 +1,25 @@
+{
+  "name": "hrmss-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test",
+    "test:full": "node scripts/verify-isolated.js",
+    "bootstrap:admin": "node scripts/bootstrap-admin.js",
+    "seed:dev": "node scripts/seed-dev.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.16.0",
+    "redis": "^4.7.0",
+    "zod": "^3.24.2"
+  }
+}
