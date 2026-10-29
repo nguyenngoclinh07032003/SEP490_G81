@@ -4,7 +4,11 @@ dist/
 *.log
 .DS_Store
 database/.mysql-local/
-
 database/private/
+database/Database/
 
 .local/
+.agents/
+.claude/
+mobile/
+HUONG_DAN_DOCKER.txt

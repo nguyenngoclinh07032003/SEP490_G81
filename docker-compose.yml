@@ -1,0 +1,82 @@
+services:
+  # 1. Dịch vụ REDIS (In-memory Cache, Session Family & Token Blacklist)
+  redis:
+    image: redis:7-alpine
+    container_name: hrmss-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # 2. Dịch vụ POSTGRESQL (Tự động khởi tạo 32 bảng từ database/hrmss_full.sql)
+  postgres:
+    image: postgres:16-alpine
+    container_name: hrmss-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-123}
+      POSTGRES_DB: ${DB_NAME:-hrmss}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/hrmss_full.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-hrmss}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # 3. Dịch vụ BACKEND API (Node.js 20 Express - src/server.js)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hrmss-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - CORS_ORIGIN=http://localhost:5173
+      - REFRESH_COOKIE_SECURE=false
+      - REFRESH_COOKIE_SAME_SITE=lax
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-123}
+      - DB_NAME=${DB_NAME:-hrmss}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # 4. Dịch vụ FRONTEND (React SPA phục vụ bởi Nginx Production)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5000
+    container_name: hrmss-frontend
+    restart: always
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  redisdata:
+  pgdata:
+
