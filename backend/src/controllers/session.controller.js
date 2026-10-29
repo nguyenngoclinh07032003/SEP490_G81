@@ -23,8 +23,13 @@ export function createSessionController(service) {
       catch (error) { if (error.status === 401) clearRefreshCookie(res); throw error; }
     }),
     
-    // Trả tài khoản đã được middleware xác thực.
-    me: (req, res) => success(res, { data: { account: req.auth.account } }),
+    // Trả tài khoản và hồ sơ của người dùng đã được middleware xác thực.
+    me: asyncHandler(async (req, res) => {
+      const profile = typeof service?.getProfile === 'function'
+        ? await service.getProfile(req.auth.account.user_id)
+        : null;
+      return success(res, { data: { account: req.auth.account, profile } });
+    }),
     
     // Thu hồi nhóm phiên hiện tại bằng Bearer hoặc cookie rồi xóa cookie trên trình duyệt.
     logout: asyncHandler(async (req, res) => {

@@ -1,5 +1,6 @@
 import { createClient } from 'redis';
 import { env } from './env.js';
+import { logger } from '../utils/logger.js';
 
 // Không xếp hàng lệnh khi Redis mất kết nối; yêu cầu xác thực phải báo lỗi thay vì chờ ngầm.
 export const redis = createClient({
@@ -8,7 +9,7 @@ export const redis = createClient({
   socket: { connectTimeout: 3000, reconnectStrategy: false },
 });
 
-redis.on('error', error => console.error('Redis connection error:', error.code || error.name));
+redis.on('error', error => logger.error('Redis connection error', { code: error.code || error.name }));
 let connecting;
 
 // Mở kết nối Redis khi cần. Các yêu cầu đồng thời dùng chung một Promise kết nối.
@@ -24,5 +25,5 @@ export async function connectRedis() {
 export async function checkRedis() {
   await connectRedis();
   await redis.ping();
-  console.log(`✅ [Redis] Connected to Redis server at ${env.REDIS_URL}`);
+  logger.info(`[Redis] Connected to Redis server at ${env.REDIS_URL}`);
 }

@@ -28,3 +28,15 @@ export const accountListSchema = z
     status: z.enum(["ACTIVE", "INACTIVE", "LOCKED"]).optional(),
   })
   .strict();
+
+export const userIdParamSchema = z
+  .object({
+    id: userIdSchema,
+  })
+  .strict();
+
+export const accountStatusUpdateSchema = z
+  .object({
+    status: z.enum(["ACTIVE", "INACTIVE", "LOCKED"]),
+  })
+  .strict();

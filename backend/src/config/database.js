@@ -1,5 +1,6 @@
 import pg from 'pg';
 import { env } from './env.js';
+import { logger } from '../utils/logger.js';
 
 // Giữ ngày/giờ không có múi giờ dưới dạng chuỗi, tránh tự đổi theo múi giờ máy chạy.
 pg.types.setTypeParser(1114, value => value);
@@ -18,7 +19,7 @@ export const pool = new pg.Pool({
   options: '-c timezone=UTC -c search_path=hrmss',
 });
 
-pool.on('error', error => console.error('PostgreSQL pool error:', error.code || error.name));
+pool.on('error', error => logger.error('PostgreSQL pool error', { code: error.code || error.name }));
 
 // Kiểm tra kết nối PostgreSQL và các bảng trong truy vấn User/Auth ngay khi khởi động.
 export async function checkPostgres() {
@@ -27,5 +28,5 @@ export async function checkPostgres() {
     LEFT JOIN hrmss.user_information i ON i.user_id = u.user_id
     LEFT JOIN hrmss.role_permission rp ON rp.role_id = r.role_id
     LEFT JOIN hrmss.permission p ON p.permission_id = rp.permission_id LIMIT 0`);
-  console.log(`✅ [PostgreSQL] Connected to "${env.DB_NAME}" at ${env.DB_HOST}:${env.DB_PORT}`);
+  logger.info(`[PostgreSQL] Connected to "${env.DB_NAME}" at ${env.DB_HOST}:${env.DB_PORT}`);
 }

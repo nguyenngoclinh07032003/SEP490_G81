@@ -2,17 +2,18 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { pool, checkPostgres } from './config/database.js';
 import { redis, checkRedis } from './config/redis.js';
+import { logger } from './utils/logger.js';
 
 // Kiểm tra kết nối PostgreSQL và Redis ngay khi khởi động server.
 await Promise.all([checkPostgres(), checkRedis()]);
 
 // Khởi động API tại cổng được cấu hình trong môi trường.
 const server = createApp().listen(env.PORT, () =>
-  console.log(`🚀 [Server] HRMSS API listening on http://localhost:${env.PORT}/api/v1`),
+  logger.info(`[Server] HRMSS API listening on http://localhost:${env.PORT}/api/v1`),
 );
 
 server.on('error', error => {
-  console.error(
+  logger.error(
     error.code === 'EADDRINUSE'
       ? `Port ${env.PORT} is already in use. Stop the previous API process before restarting.`
       : `Server error: ${error.code || error.name}`,

@@ -86,5 +86,21 @@ export function createUserRepository(db = pool) {
         [...values, limit, (page - 1) * limit]);
       return { items: result.items, total: result.total };
     },
+
+    // Đếm số lượng ADMIN đang ACTIVE để bảo vệ tài khoản ADMIN cuối cùng.
+    async countActiveAdmins() {
+      const { rows } = await db.query(`SELECT count(*)::int AS total
+        FROM hrmss.${UserAccountModel.table} u JOIN hrmss.${RoleModel.table} r ON r.role_id = u.role_id
+        WHERE r.role_code = 'ADMIN' AND u.account_status = 'ACTIVE'`);
+      return rows[0]?.total ?? 0;
+    },
+
+    // Cập nhật trạng thái tài khoản (ACTIVE, INACTIVE, LOCKED) và thời gian sửa đổi.
+    async updateAccountStatus(userId, status) {
+      await db.query(`UPDATE hrmss.${UserAccountModel.table}
+        SET account_status = $2, updated_at = (statement_timestamp() AT TIME ZONE 'UTC')
+        WHERE user_id = $1`, [userId, status]);
+      return this.findAccountById(userId);
+    },
   };
 }

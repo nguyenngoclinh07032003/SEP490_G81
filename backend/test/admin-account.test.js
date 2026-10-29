@@ -64,3 +64,74 @@ test('Redis outage rejects login with 503, rate limit with 429',async()=>{
  const limited=createSessionService({sessions:{allowLogin:async()=>false},users:{}});
  await assert.rejects(limited.login({identifier:'x',password:'ExamplePass123!'}),{status:429});
 });
+
+test('user retrieval, admin list/detail/roles and status lock with session revocation',async()=>{
+ const mockAdmin={user_id:'1',username:'admin01',email:'admin01@hrmss.vn',account_status:'ACTIVE',created_at:'2026-01-01T00:00:00Z',role_id:'1',role_code:'ADMIN',role_name:'System Administrator',full_name:'Admin One',phone:'0901234567'};
+ const mockStaff={user_id:'2',username:'staff01',email:'staff01@hrmss.vn',account_status:'ACTIVE',created_at:'2026-01-02T00:00:00Z',role_id:'3',role_code:'OFFICE_STAFF',role_name:'Office Staff',full_name:'Staff One',phone:null};
+ const mockProfile={user_id:'1',full_name:'Admin One',phone:'0901234567',created_at:'2026-01-01T00:00:00Z',updated_at:'2026-01-01T00:00:00Z'};
+ let revokedUserId=null;
+ const mockRepo={
+  findAccountById:async id=>id==='1'?mockAdmin:(id==='2'?mockStaff:null),
+  findAccountByIdForShare:async id=>id==='1'?mockAdmin:(id==='2'?mockStaff:null),
+  findProfileByUserId:async id=>id==='1'?mockProfile:null,
+  listAccounts:async()=>({items:[mockAdmin,mockStaff],total:2}),
+  countActiveAdmins:async()=>1,
+  updateAccountStatus:async(id,status)=>{if(id==='2'){mockStaff.account_status=status;return mockStaff;}return null;}
+ };
+ const mockPermRepo={
+  findPermissionsByUserId:async()=>[{permission_code:'user.create',permission_name:'Create User'}],
+  listRoles:async()=>[{role_id:'1',role_code:'ADMIN',role_name:'System Administrator'},{role_id:'3',role_code:'OFFICE_STAFF',role_name:'Office Staff'}],
+  hasPermission:async()=>true
+ };
+ const validToken='a'.repeat(64);
+ const sessionService={
+  authenticate:async token=>token===validToken?{user_id:'1',username:'admin01',email:'admin01@hrmss.vn',account_status:'ACTIVE',role:{role_id:'1',role_code:'ADMIN',role_name:'System Administrator'}}:(() => {throw Object.assign(Error('Unauthorized'),{status:401,code:'UNAUTHORIZED'});})(),
+  getProfile:async userId=>userId==='1'?{user_id:'1',full_name:'Admin One',phone:'0901234567'}:null,
+  logoutAll:async userId=>{revokedUserId=userId;}
+ };
+ const adminAccountService=createAdminAccountService({
+  transaction:async work=>work({}),
+  repository:()=>mockRepo,
+  permissionRepository:()=>mockPermRepo
+ });
+ const server=createApp({sessionService,adminAccountService}).listen(0,'127.0.0.1');
+ await once(server,'listening');
+ const base=`http://127.0.0.1:${server.address().port}/api/v1`;
+ const headers={Authorization:`Bearer ${validToken}`,'Content-Type':'application/json'};
+ try{
+  const meRes=await fetch(`${base}/auth/me`,{headers});
+  assert.equal(meRes.status,200);
+  const meBody=await meRes.json();
+  assert.equal(meBody.data.account.username,'admin01');
+  assert.equal(meBody.data.profile.full_name,'Admin One');
+
+  const listRes=await fetch(`${base}/admin/accounts?page=1&limit=20`,{headers});
+  assert.equal(listRes.status,200);
+  const listBody=await listRes.json();
+  assert.equal(listBody.data.items.length,2);
+  assert.equal(listBody.data.pagination.total,2);
+
+  const rolesRes=await fetch(`${base}/admin/accounts/roles`,{headers});
+  assert.equal(rolesRes.status,200);
+  const rolesBody=await rolesRes.json();
+  assert.equal(rolesBody.data.roles.length,2);
+
+  const detailRes=await fetch(`${base}/admin/accounts/1`,{headers});
+  assert.equal(detailRes.status,200);
+  const detailBody=await detailRes.json();
+  assert.equal(detailBody.data.account.username,'admin01');
+  assert.equal(detailBody.data.profile.full_name,'Admin One');
+
+  const selfLockRes=await fetch(`${base}/admin/accounts/1/status`,{method:'PATCH',headers,body:JSON.stringify({status:'LOCKED'})});
+  assert.equal(selfLockRes.status,409);
+
+  const lockStaffRes=await fetch(`${base}/admin/accounts/2/status`,{method:'PATCH',headers,body:JSON.stringify({status:'LOCKED'})});
+  assert.equal(lockStaffRes.status,200);
+  const lockStaffBody=await lockStaffRes.json();
+  assert.equal(lockStaffBody.data.account.account_status,'LOCKED');
+  assert.equal(revokedUserId,'2');
+ }finally{
+  server.closeAllConnections();
+  await new Promise(resolve=>server.close(resolve));
+ }
+});

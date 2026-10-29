@@ -3,7 +3,7 @@ import { createSessionRepository } from "../repositories/session.repository.js";
 import { createUserRepository } from "../repositories/user.repository.js";
 import { verifyPassword, hashPassword } from "../utils/password.js";
 import { AppError } from "../utils/app-error.js";
-import { toPublicAccount } from "../mappers/user.mapper.js";
+import { toPublicAccount, toPublicProfile } from "../mappers/user.mapper.js";
 // Băm token/IP trước khi dùng làm khóa Redis; không lưu token thô.
 const digest = (value) => createHash("sha256").update(value).digest("hex");
 // Dùng chung thông báo lỗi để không tiết lộ tài khoản hay bước xác thực bị sai.
@@ -27,12 +27,13 @@ function tokens() {
   };
 }
 // Gói kết quả nội bộ; controller tách refresh token sang cookie và không trả nó trong JSON.
-function result(pair, user, remaining) {
+function result(pair, user, remaining, profile = null) {
   return {
     access_token: pair.accessToken,
     token_type: "Bearer",
     expires_in: Math.min(accessSeconds, remaining),
     account: toPublicAccount(user),
+    profile: toPublicProfile(profile),
     refreshToken: pair.refreshToken,
     refreshExpiresIn: remaining,
   };
@@ -87,7 +88,11 @@ export function createSessionService({
           refreshSeconds,
         }),
       );
-      return result(pair, user, refreshSeconds);
+      const profile =
+        typeof users.findProfileByUserId === "function"
+          ? await users.findProfileByUserId(user.user_id)
+          : null;
+      return result(pair, user, refreshSeconds, profile);
     },
     // Kiểm tra lại tài khoản ACTIVE rồi yêu cầu Redis rotation nguyên tử.
     // TTL trả về là thời gian còn lại của nhóm; không gia hạn mốc 7 ngày.
@@ -120,7 +125,11 @@ export function createSessionService({
         }),
       );
       if (ttl <= 0) throw unauthorized();
-      return result(pair, user, Math.floor(ttl / 1000));
+      const profile =
+        typeof users.findProfileByUserId === "function"
+          ? await users.findProfileByUserId(user.user_id)
+          : null;
+      return result(pair, user, Math.floor(ttl / 1000), profile);
     },
     // Kiểm tra phiên/BL rồi đọc lại tài khoản từ DB để áp dụng role và trạng thái hiện tại.
     async authenticate(token) {
@@ -131,6 +140,11 @@ export function createSessionService({
       const user = await users.findAccountById(userId);
       if (!user || user.account_status !== "ACTIVE") throw unauthorized();
       return toPublicAccount(user);
+    },
+    // Lấy thông tin hồ sơ cá nhân theo ID tài khoản.
+    async getProfile(userId) {
+      if (typeof users.findProfileByUserId !== "function") return null;
+      return toPublicProfile(await users.findProfileByUserId(userId));
     },
     // Thu hồi nhóm phiên hiện tại thông qua hash của access token.
     async logout(token) {
